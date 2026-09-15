@@ -2,180 +2,220 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KaggleOS - AI Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KaggleOS</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
-body { font-family: 'Inter', sans-serif; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+* { -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
 .mono { font-family: 'JetBrains Mono', monospace; }
-.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-.chat-bubble { max-width: 85%; word-wrap: break-word; }
-.task-running { animation: pulse 2s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+.message-enter { animation: slideIn 0.2s ease-out; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.pulse-dot { animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 </style>
 </head>
-<body class="bg-[#0a0a0a] text-gray-100 h-screen flex flex-col overflow-hidden">
-<!-- Header -->
-<header class="bg-[#111111] border-b border-gray-800 px-4 py-3 flex items-center justify-between">
+<body class="bg-white dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-100 h-[100dvh] flex flex-col overflow-hidden">
+<!-- Header - Minimal -->
+<header class="h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md sticky top-0 z-30">
 <div class="flex items-center gap-3">
-<div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center">
-<i class="fas fa-robot text-white text-sm"></i>
-</div>
+<button id="menu-btn" class="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center md:hidden">
+<i class="fas fa-bars text-sm"></i>
+</button>
+<div class="w-8 h-8 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-sm">K</div>
 <div>
-<h1 class="font-bold text-sm">KaggleOS</h1>
-<p class="text-[11px] text-gray-400 -mt-1">AI Agent • Terminal • Workspaces</p>
+<h1 class="font-semibold text-[15px] leading-none">KaggleOS</h1>
+<div class="flex items-center gap-1.5 mt-0.5">
+<div id="status-dot" class="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-600"></div>
+<span id="status-text" class="text-[11px] text-zinc-500">Offline</span>
 </div>
-<div id="status-dot" class="w-2 h-2 bg-gray-500 rounded-full ml-3"></div>
-<span id="status-text" class="text-xs text-gray-400">Offline</span>
+</div>
 </div>
 <div class="flex items-center gap-2">
-<button id="settings-btn" class="p-2 hover:bg-gray-800 rounded-lg"><i class="fas fa-cog text-gray-400 text-sm"></i></button>
-<a href="https://github.com/lalibano/kaggle-ai-agent" target="_blank" class="p-2 hover:bg-gray-800 rounded-lg"><i class="fab fa-github text-gray-400 text-sm"></i></a>
+<span id="current-workspace" class="text-xs px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 font-medium">default</span>
+<button id="settings-btn" class="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+<i class="fas fa-ellipsis-h text-xs"></i>
+</button>
 </div>
 </header>
 
-<div class="flex flex-1 overflow-hidden">
-<!-- Sidebar - Workspaces -->
-<div class="w-64 bg-[#111111] border-r border-gray-800 flex flex-col">
-<div class="p-3 border-b border-gray-800">
-<button id="new-chat-btn" class="w-full bg-white text-black text-sm font-medium py-2 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2">
-<i class="fas fa-plus text-xs"></i> New Workspace
+<div class="flex flex-1 overflow-hidden relative">
+<!-- Sidebar - Workspaces Drawer -->
+<div id="sidebar" class="absolute md:relative inset-y-0 left-0 w-[300px] bg-white dark:bg-[#111111] border-r border-zinc-200 dark:border-zinc-800 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col">
+<div class="p-4 border-b border-zinc-200 dark:border-zinc-800">
+<button id="new-chat-btn" class="w-full h-11 rounded-full bg-black dark:bg-white text-white dark:text-black font-medium text-sm flex items-center justify-center gap-2">
+<i class="fas fa-plus"></i> New Chat
 </button>
-</div>
-<div class="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1" id="workspace-list">
-<div class="text-xs text-gray-500 p-3 text-center">No workspaces yet</div>
-</div>
-<div class="p-3 border-t border-gray-800 space-y-2">
-<div class="bg-[#1a1a1a] rounded-lg p-2">
-<p class="text-[11px] text-gray-400 mb-1">NTFY Topic</p>
-<input id="ntfy-topic" type="text" placeholder="kaggle-agent-amaankhan231" class="w-full bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 text-xs mono">
-</div>
-<div class="bg-[#1a1a1a] rounded-lg p-2">
-<p class="text-[11px] text-gray-400 mb-1">Kaggle API URL</p>
-<input id="kaggle-url" type="text" placeholder="https://xxx.trycloudflare.com" class="w-full bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 text-xs mono">
-<p class="text-[10px] text-gray-500 mt-1">Auto-updated when Kaggle runs</p>
-</div>
-<div id="internet-status" class="bg-[#1a1a1a] rounded-lg p-2 text-[11px]">
-<span class="text-gray-400">Internet:</span> <span id="internet-text" class="text-gray-500">Checking...</span>
-</div>
-</div>
-</div>
-
-<!-- Main - Chat -->
-<div class="flex-1 flex flex-col bg-[#0a0a0a]">
-<!-- Chat Header -->
-<div class="px-4 py-2 border-b border-gray-800 flex items-center justify-between bg-[#111111]">
-<div class="flex items-center gap-2">
-<i class="fas fa-comments text-gray-400 text-xs"></i>
-<span id="current-workspace" class="text-sm font-medium">default</span>
-<span class="text-xs text-gray-500">•</span>
-<select id="model-select" class="bg-[#1a1a1a] border border-gray-700 rounded px-2 py-1 text-xs">
-<option value="auto">Auto Router</option>
-<option value="coding">Claude 3.5 Sonnet (Coding)</option>
-<option value="fast">GPT-4o-mini (Fast)</option>
-<option value="general">GPT-4o (General)</option>
-<option value="cheap">Llama 3.3 (Cheap)</option>
+<div class="mt-3 flex gap-2">
+<select id="model-select" class="flex-1 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 border-0 px-3 text-xs font-medium">
+<option value="auto">Auto</option>
+<option value="coding">Claude 3.5</option>
+<option value="fast">GPT-4o-mini</option>
+<option value="cheap">Llama 3.3</option>
 </select>
-</div>
-<div class="flex gap-2">
-<button id="clear-chat" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800">Clear</button>
-<button id="reload-history" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800"><i class="fas fa-sync"></i> Reload</button>
-</div>
-</div>
-
-<!-- Messages -->
-<div id="chat-messages" class="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-3">
-</div>
-
-<!-- Input -->
-<div class="p-3 border-t border-gray-800 bg-[#111111]">
-<div class="flex gap-2">
-<textarea id="chat-input" placeholder="Ask agent to do anything... (Shift+Enter for new line) - try 'fetch https://api.github.com' for internet test" class="flex-1 bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:border-violet-500 min-h-[44px] max-h-32" rows="1"></textarea>
-<button id="send-btn" class="bg-white text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 flex items-center gap-2">
-<i class="fas fa-paper-plane text-xs"></i> Send
+<button id="reload-history" class="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+<i class="fas fa-rotate text-xs"></i>
 </button>
 </div>
-<p class="text-[10px] text-gray-500 mt-2 px-1">Enter to send • Shift+Enter new line • Agent can run multiple tasks in parallel • Has internet via web_fetch + shell curl</p>
+</div>
+<div id="workspace-list" class="flex-1 overflow-y-auto scrollbar-none p-2 space-y-1">
+<div class="text-xs text-zinc-400 p-4 text-center">No chats yet</div>
+</div>
+<div class="p-3 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+<div class="flex items-center justify-between text-[11px]">
+<span class="text-zinc-500">Internet</span>
+<span id="internet-text" class="font-medium">Checking...</span>
+</div>
+<input id="kaggle-url" type="text" placeholder="API URL auto-updates" class="w-full h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 text-[11px] mono border-0">
+<input id="ntfy-topic" type="text" placeholder="ntfy topic" class="w-full h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 text-[11px] mono border-0 hidden md:block">
 </div>
 </div>
 
-<!-- Right Panel - Files, Terminal, Tasks -->
-<div class="w-80 bg-[#111111] border-l border-gray-800 flex flex-col">
-<!-- Tabs -->
-<div class="flex border-b border-gray-800">
-<button data-tab="files" class="tab-btn flex-1 py-2.5 text-xs font-medium border-b-2 border-white">Files</button>
-<button data-tab="terminal" class="tab-btn flex-1 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-400">Terminal</button>
-<button data-tab="tasks" class="tab-btn flex-1 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-400">Tasks</button>
-</div>
+<!-- Overlay for mobile -->
+<div id="sidebar-overlay" class="absolute inset-0 bg-black/20 backdrop-blur-sm z-30 hidden md:hidden"></div>
 
-<!-- Files Tab -->
-<div id="tab-files" class="tab-content flex-1 flex flex-col overflow-hidden">
-<div class="p-2 flex gap-1">
-<button id="refresh-files" class="p-1.5 hover:bg-gray-800 rounded text-xs"><i class="fas fa-sync"></i></button>
-<button id="new-file" class="p-1.5 hover:bg-gray-800 rounded text-xs"><i class="fas fa-file-circle-plus"></i></button>
-<input id="file-path" type="text" value="." class="flex-1 bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 text-xs mono ml-1">
+<!-- Main Chat -->
+<div class="flex-1 flex flex-col min-w-0 bg-zinc-50 dark:bg-[#0a0a0a]">
+<!-- Messages -->
+<div id="chat-messages" class="flex-1 overflow-y-auto scrollbar-none px-4 py-6 space-y-4">
+<!-- Welcome -->
+<div id="welcome" class="max-w-2xl mx-auto text-center py-12">
+<div class="w-12 h-12 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center mx-auto mb-4 text-xl">✦</div>
+<h2 class="text-xl font-semibold mb-2">What can I help you build?</h2>
+<p class="text-sm text-zinc-500 mb-6">Autonomous agent with terminal, parallel tasks, internet</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+<button class="prompt-card p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-left hover:border-zinc-300 dark:hover:border-zinc-700">
+<span class="font-medium">🌤️ Weather in Mumbai</span><br><span class="text-xs text-zinc-500">Fetch live weather via wttr.in</span>
+</button>
+<button class="prompt-card p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-left hover:border-zinc-300 dark:hover:border-zinc-700">
+<span class="font-medium">📁 Create todo app</span><br><span class="text-xs text-zinc-500">Build 3 files in parallel</span>
+</button>
+<button class="prompt-card p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-left hover:border-zinc-300 dark:hover:border-zinc-700">
+<span class="font-medium">🐍 Train model</span><br><span class="text-xs text-zinc-500">Run in background task</span>
+</button>
+<button class="prompt-card p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-left hover:border-zinc-300 dark:hover:border-zinc-700">
+<span class="font-medium">💻 Terminal</span><br><span class="text-xs text-zinc-500">ls, pip install, curl</span>
+</button>
 </div>
-<div id="file-list" class="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-0.5 text-xs">
-<div class="text-gray-500 p-3 text-center text-xs">Select workspace to see files</div>
-</div>
-<div id="file-preview" class="h-48 border-t border-gray-800 bg-[#0a0a0a] p-2 overflow-auto scrollbar-thin hidden">
-<pre id="file-content" class="text-[11px] mono whitespace-pre-wrap"></pre>
-</div>
-</div>
-
-<!-- Terminal Tab -->
-<div id="tab-terminal" class="tab-content flex-1 flex flex-col overflow-hidden hidden">
-<div class="p-2 flex gap-1">
-<input id="terminal-input" type="text" placeholder="ls -la, pip install, python script.py, curl https://api.github.com" class="flex-1 bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1.5 text-xs mono">
-<button id="terminal-run" class="bg-[#1a1a1a] hover:bg-gray-800 px-3 py-1 rounded text-xs">Run</button>
-</div>
-<div id="terminal-output" class="flex-1 bg-[#0a0a0a] m-2 rounded-lg p-3 overflow-auto scrollbar-thin mono text-[11px] whitespace-pre-wrap">
-<span class="text-gray-500">Terminal ready. Has internet! Try: curl https://api.github.com or pip install. Install doesn't need permission, delete needs confirm.</span>
 </div>
 </div>
 
-<!-- Tasks Tab -->
-<div id="tab-tasks" class="tab-content flex-1 flex flex-col overflow-hidden hidden">
-<div class="p-2 flex justify-between items-center">
-<span class="text-xs font-medium">Parallel Tasks</span>
-<button id="refresh-tasks" class="p-1 hover:bg-gray-800 rounded text-xs"><i class="fas fa-sync"></i></button>
+<!-- Input - Floating -->
+<div class="p-3 md:p-4 bg-gradient-to-t from-zinc-50 dark:from-[#0a0a0a] to-transparent">
+<div class="max-w-3xl mx-auto">
+<div class="relative flex items-end gap-2 bg-white dark:bg-zinc-900 rounded-[24px] border border-zinc-200 dark:border-zinc-800 shadow-sm p-2">
+<textarea id="chat-input" placeholder="Ask anything..." rows="1" class="flex-1 bg-transparent border-0 px-3 py-2.5 text-[15px] resize-none focus:outline-none focus:ring-0 max-h-32 placeholder:text-zinc-400"></textarea>
+<button id="send-btn" class="w-9 h-9 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center flex-shrink-0 disabled:opacity-30">
+<i class="fas fa-arrow-up text-sm"></i>
+</button>
 </div>
-<div id="tasks-list" class="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-2">
-<div class="text-gray-500 p-3 text-center text-xs">No tasks running</div>
+<div class="flex items-center justify-center gap-3 mt-2 text-[10px] text-zinc-400">
+<span><i class="fas fa-bolt mr-1"></i>Parallel tasks</span>
+<span>•</span>
+<span><i class="fas fa-wifi mr-1"></i>Internet</span>
+<span>•</span>
+<span id="task-count">0 tasks</span>
 </div>
 </div>
 </div>
+</div>
+
+<!-- Right Panel - Desktop only, bottom sheet on mobile -->
+<div id="right-panel" class="hidden md:flex w-[360px] bg-white dark:bg-[#111111] border-l border-zinc-200 dark:border-zinc-800 flex-col">
+<div class="flex p-1 m-2 bg-zinc-100 dark:bg-zinc-800 rounded-full">
+<button data-tab="files" class="tab-btn flex-1 h-8 rounded-full bg-white dark:bg-zinc-700 text-xs font-medium shadow-sm">Files</button>
+<button data-tab="terminal" class="tab-btn flex-1 h-8 rounded-full text-xs font-medium text-zinc-500">Terminal</button>
+<button data-tab="tasks" class="tab-btn flex-1 h-8 rounded-full text-xs font-medium text-zinc-500">Tasks</button>
+</div>
+<div id="tab-files" class="tab-content flex-1 flex flex-col overflow-hidden p-3">
+<div class="flex gap-2 mb-3">
+<input id="file-path" type="text" value="." class="flex-1 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 text-xs mono border-0">
+<button id="refresh-files" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-rotate text-[10px]"></i></button>
+</div>
+<div id="file-list" class="flex-1 overflow-y-auto scrollbar-none space-y-1">
+<div class="text-xs text-zinc-400 p-4 text-center">No files</div>
+</div>
+<div id="file-preview" class="mt-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hidden">
+<pre id="file-content" class="text-[11px] mono whitespace-pre-wrap max-h-40 overflow-auto"></pre>
+</div>
+</div>
+<div id="tab-terminal" class="tab-content flex-1 flex-col overflow-hidden p-3 hidden">
+<input id="terminal-input" type="text" placeholder="ls -la, curl, pip install..." class="w-full h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 text-xs mono border-0 mb-3">
+<div id="terminal-output" class="flex-1 rounded-2xl bg-zinc-950 text-zinc-100 p-3 mono text-[11px] whitespace-pre-wrap overflow-auto">Terminal ready. Has internet!</div>
+<button id="terminal-run" class="mt-3 w-full h-9 rounded-full bg-black dark:bg-white text-white dark:text-black text-xs font-medium">Run</button>
+</div>
+<div id="tab-tasks" class="tab-content flex-1 flex-col overflow-hidden p-3 hidden">
+<div id="tasks-list" class="flex-1 overflow-y-auto scrollbar-none space-y-2">
+<div class="text-xs text-zinc-400 p-4 text-center">No tasks</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Mobile Bottom Tabs -->
+<div class="md:hidden h-14 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111111] flex items-center justify-around px-2">
+<button data-mobile-tab="chat" class="mobile-tab flex flex-col items-center gap-1 py-2 px-4 rounded-full bg-black dark:bg-white text-white dark:text-black">
+<i class="fas fa-comment text-[14px]"></i><span class="text-[10px] font-medium">Chat</span>
+</button>
+<button data-mobile-tab="files" class="mobile-tab flex flex-col items-center gap-1 py-2 px-4 text-zinc-400">
+<i class="fas fa-folder text-[14px]"></i><span class="text-[10px]">Files</span>
+</button>
+<button data-mobile-tab="terminal" class="mobile-tab flex flex-col items-center gap-1 py-2 px-4 text-zinc-400">
+<i class="fas fa-terminal text-[14px]"></i><span class="text-[10px]">Terminal</span>
+</button>
+<button data-mobile-tab="tasks" class="mobile-tab flex flex-col items-center gap-1 py-2 px-4 text-zinc-400">
+<i class="fas fa-list-check text-[14px]"></i><span class="text-[10px]">Tasks</span>
+</button>
+</div>
+
+<!-- Mobile Sheets -->
+<div id="mobile-files" class="md:hidden absolute inset-0 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
+<div class="h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
+<h3 class="font-semibold">Files</h3>
+<button class="close-mobile w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-xmark text-xs"></i></button>
+</div>
+<div class="p-3 flex-1 flex flex-col overflow-hidden">
+<input id="file-path-mobile" type="text" value="." class="h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 text-xs mono border-0 mb-3">
+<div id="file-list-mobile" class="flex-1 overflow-y-auto space-y-1"></div>
+</div>
+</div>
+
+<div id="mobile-terminal" class="md:hidden absolute inset-0 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
+<div class="h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
+<h3 class="font-semibold">Terminal</h3>
+<button class="close-mobile w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-xmark text-xs"></i></button>
+</div>
+<div class="p-3 flex-1 flex flex-col">
+<input id="terminal-input-mobile" type="text" placeholder="Command..." class="h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 text-sm mono border-0 mb-3">
+<div id="terminal-output-mobile" class="flex-1 rounded-2xl bg-zinc-950 text-zinc-100 p-3 mono text-xs whitespace-pre-wrap overflow-auto"></div>
+<button id="terminal-run-mobile" class="mt-3 h-11 rounded-full bg-black dark:bg-white text-white dark:text-black font-medium">Run</button>
+</div>
+</div>
+
+<div id="mobile-tasks" class="md:hidden absolute inset-0 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
+<div class="h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
+<h3 class="font-semibold">Tasks</h3>
+<button class="close-mobile w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-xmark text-xs"></i></button>
+</div>
+<div id="tasks-list-mobile" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
 </div>
 
 <!-- Settings Modal -->
-<div id="settings-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
-<div class="bg-[#111111] border border-gray-800 rounded-xl w-[500px] max-w-[90vw] p-5">
-<h3 class="font-bold mb-4">Settings</h3>
+<div id="settings-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+<div class="bg-white dark:bg-zinc-900 rounded-[24px] w-full max-w-sm p-6 shadow-xl">
+<h3 class="font-semibold mb-4">Settings</h3>
 <div class="space-y-3">
-<div>
-<label class="text-xs text-gray-400">OpenRouter API Key (stored in localStorage, never sent to GitHub)</label>
-<input id="openrouter-key" type="password" placeholder="sk-or-v1-..." class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
+<input id="openrouter-key" type="password" placeholder="OpenRouter key (optional)" class="w-full h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 text-sm border-0">
+<input id="settings-ntfy" type="text" placeholder="ntfy topic" class="w-full h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 text-sm border-0">
+<input id="settings-kaggle-url" type="text" placeholder="API URL" class="w-full h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 text-sm mono border-0">
 </div>
-<div>
-<label class="text-xs text-gray-400">NTFY Topic (for push notifications)</label>
-<input id="settings-ntfy" type="text" placeholder="kaggle-agent-amaankhan231" class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
-<p class="text-[10px] text-gray-500 mt-1">Install ntfy app on phone and subscribe to this topic</p>
-</div>
-<div>
-<label class="text-xs text-gray-400">Gmail for notifications (optional)</label>
-<input id="settings-gmail" type="email" placeholder="you@gmail.com" class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
-</div>
-<div>
-<label class="text-xs text-gray-400">Kaggle API URL (auto-updated)</label>
-<input id="settings-kaggle-url" type="text" placeholder="https://xxx.trycloudflare.com" class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
-</div>
-</div>
-<div class="flex justify-end gap-2 mt-5">
-<button id="settings-cancel" class="px-4 py-2 text-xs bg-[#1a1a1a] rounded-lg hover:bg-gray-800">Cancel</button>
-<button id="settings-save" class="px-4 py-2 text-xs bg-white text-black rounded-lg hover:bg-gray-200 font-medium">Save</button>
+<div class="flex gap-2 mt-6">
+<button id="settings-cancel" class="flex-1 h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 font-medium text-sm">Cancel</button>
+<button id="settings-save" class="flex-1 h-11 rounded-full bg-black dark:bg-white text-white dark:text-black font-medium text-sm">Save</button>
 </div>
 </div>
 </div>
@@ -186,452 +226,298 @@ let currentWorkspace = localStorage.getItem('currentWorkspace') || 'default';
 let kaggleUrl = localStorage.getItem('kaggleUrl') || '';
 let ntfyTopic = localStorage.getItem('ntfyTopic') || 'kaggle-agent-amaankhan231';
 let openrouterKey = localStorage.getItem('openrouterKey') || '';
-let workspaces = [];
 
-// DOM
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
 const workspaceList = document.getElementById('workspace-list');
 const currentWorkspaceEl = document.getElementById('current-workspace');
-const fileList = document.getElementById('file-list');
-const terminalOutput = document.getElementById('terminal-output');
-const tasksList = document.getElementById('tasks-list');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
+const welcomeEl = document.getElementById('welcome');
 
-// Init
 document.getElementById('kaggle-url').value = kaggleUrl;
 document.getElementById('ntfy-topic').value = ntfyTopic;
-document.getElementById('openrouter-key').value = openrouterKey ? '••••••••' + openrouterKey.slice(-10) : '';
 document.getElementById('settings-ntfy').value = ntfyTopic;
 document.getElementById('settings-kaggle-url').value = kaggleUrl;
 currentWorkspaceEl.textContent = currentWorkspace;
-checkKaggleStatus();
-loadChatHistory(currentWorkspace);
 
-// Load config.json for auto tunnel URL
-fetch('config.json').then(r => r.json()).then(cfg => {
-  if(cfg.kaggle_url && cfg.kaggle_url !== kaggleUrl) {
-    kaggleUrl = cfg.kaggle_url;
-    localStorage.setItem('kaggleUrl', kaggleUrl);
-    document.getElementById('kaggle-url').value = kaggleUrl;
-    document.getElementById('settings-kaggle-url').value = kaggleUrl;
-    checkKaggleStatus();
-    refreshWorkspaces();
-  }
-  if(cfg.ntfy_topic) {
-    ntfyTopic = cfg.ntfy_topic;
-    localStorage.setItem('ntfyTopic', ntfyTopic);
-    document.getElementById('ntfy-topic').value = ntfyTopic;
-    document.getElementById('settings-ntfy').value = ntfyTopic;
-  }
-}).catch(() => {});
+checkStatus();
+loadHistory(currentWorkspace);
 
-function checkKaggleStatus() {
-  if(!kaggleUrl) {
-    statusDot.className = 'w-2 h-2 bg-gray-500 rounded-full ml-3';
-    statusText.textContent = 'Offline - Start Kaggle kernel';
-    document.getElementById('internet-text').textContent = 'No backend';
-    document.getElementById('internet-text').className = 'text-red-400';
+fetch('config.json').then(r=>r.json()).then(cfg=>{
+  if(cfg.kaggle_url && cfg.kaggle_url!==kaggleUrl){
+    kaggleUrl=cfg.kaggle_url; localStorage.setItem('kaggleUrl',kaggleUrl);
+    document.getElementById('kaggle-url').value=kaggleUrl;
+    document.getElementById('settings-kaggle-url').value=kaggleUrl;
+    checkStatus(); refreshWorkspaces();
+  }
+}).catch(()=>{});
+
+function checkStatus(){
+  if(!kaggleUrl){
+    statusDot.className='w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-600';
+    statusText.textContent='Offline';
+    document.getElementById('internet-text').textContent='No backend';
     return;
   }
-  fetch(kaggleUrl + '/', {mode: 'cors'}).then(r => r.json()).then(data => {
-    statusDot.className = 'w-2 h-2 bg-green-500 rounded-full ml-3';
-    statusText.textContent = `Online • ${data.workspaces || 0} ws • ${data.tasks || 0} tasks`;
-    // Test internet via backend
-    fetch(kaggleUrl + '/shell', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({chat_id: 'default', cmd: 'curl -s -m 5 https://api.github.com | head -n 1 && echo INTERNET_OK || echo NO_INTERNET'})
-    }).then(r=>r.json()).then(d=>{
-      if(d.stdout && d.stdout.includes('INTERNET_OK')) {
-        document.getElementById('internet-text').textContent = '✅ Online (curl + web_fetch)';
-        document.getElementById('internet-text').className = 'text-green-400';
-      } else {
-        document.getElementById('internet-text').textContent = '❌ No internet in Kaggle';
-        document.getElementById('internet-text').className = 'text-red-400';
-      }
-    }).catch(()=>{
-      document.getElementById('internet-text').textContent = 'Checking...';
-    });
-  }).catch(() => {
-    statusDot.className = 'w-2 h-2 bg-yellow-500 rounded-full ml-3';
-    statusText.textContent = 'Kaggle URL set but unreachable';
-    document.getElementById('internet-text').textContent = 'Unreachable';
-    document.getElementById('internet-text').className = 'text-yellow-400';
+  fetch(kaggleUrl+'/',{mode:'cors'}).then(r=>r.json()).then(d=>{
+    statusDot.className='w-2 h-2 rounded-full bg-green-500 pulse-dot';
+    statusText.textContent=`${d.workspaces||0} chats • ${d.tasks||0} tasks`;
+    document.getElementById('task-count').textContent=`${d.tasks||0} tasks`;
+    document.getElementById('internet-text').textContent='✅ Online';
+  }).catch(()=>{
+    statusDot.className='w-2 h-2 rounded-full bg-amber-500';
+    statusText.textContent='Unreachable';
   });
 }
 
-function clearChatUI() {
-  chatMessages.innerHTML = '';
-}
-
-function addWelcomeMessage() {
-  const div = document.createElement('div');
-  div.className = 'flex gap-3';
-  div.innerHTML = `
-      <div class="w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-xs"></i></div>
-      <div class="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble">
-        <p class="text-sm">👋 I'm <b>KaggleOS</b> — workspace <b>${currentWorkspace}</b></p>
-        <p class="text-xs text-gray-400 mt-2">I have internet! Try:</p>
-        <ul class="text-xs text-gray-300 list-disc ml-4 mt-1 space-y-0.5">
-          <li><code class="bg-[#0a0a0a] px-1 py-0.5 rounded">fetch https://api.github.com</code></li>
-          <li><code class="bg-[#0a0a0a] px-1 py-0.5 rounded">ls -la</code> or <code class="bg-[#0a0a0a] px-1 py-0.5 rounded">pip install requests</code></li>
-          <li>Chat history is saved per workspace in memory.json</li>
-        </ul>
-      </div>
-    `;
+function clearChat(){ chatMessages.innerHTML=''; }
+function addWelcome(){
+  if(welcomeEl) welcomeEl.style.display='none';
+  const div=document.createElement('div');
+  div.className='max-w-2xl mx-auto text-center py-8';
+  div.innerHTML=`<div class="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-3">✦</div><p class="text-sm text-zinc-500">New chat <b>${currentWorkspace}</b> — isolated workspace, history saved</p>`;
   chatMessages.appendChild(div);
 }
 
-function addMessage(role, content, isTool = false) {
-  const div = document.createElement('div');
-  div.className = 'flex gap-3';
-  if(role === 'user') {
-    div.innerHTML = `
-      <div class="w-7 h-7 bg-[#1a1a1a] rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-user text-xs"></i></div>
-      <div class="bg-white text-black rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble"><p class="text-sm">${escapeHtml(content)}</p></div>
-    `;
+function addMsg(role, content, isTool=false){
+  if(welcomeEl) welcomeEl.style.display='none';
+  const div=document.createElement('div');
+  div.className='message-enter max-w-3xl mx-auto w-full flex gap-3';
+  if(role==='user'){
+    div.innerHTML=`<div class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0 mt-1"><i class="fas fa-user text-[11px]"></i></div><div class="flex-1 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-[18px] rounded-tl-[4px] px-4 py-2.5 text-[14px] leading-relaxed">${esc(content)}</div>`;
   } else {
-    div.innerHTML = `
-      <div class="w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-xs"></i></div>
-      <div class="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble ${isTool ? 'border border-violet-500/30' : ''}">
-        <div class="text-sm whitespace-pre-wrap">${formatContent(content)}</div>
-      </div>
-    `;
+    div.innerHTML=`<div class="w-7 h-7 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center flex-shrink-0 mt-1 text-[12px]">✦</div><div class="flex-1 ${isTool?'bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700':'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800'} rounded-[18px] rounded-tl-[4px] px-4 py-3 text-[14px] leading-relaxed"><div class="whitespace-pre-wrap">${fmt(content)}</div></div>`;
   }
   chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+function esc(t){ const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+function fmt(t){
+  if(!t) return '<span class="text-zinc-400">...</span>';
+  return esc(t).replace(/```([\s\S]*?)```/g,'<pre class="mt-2 p-3 rounded-xl bg-zinc-950 text-zinc-100 mono text-xs overflow-auto">$1</pre>').replace(/`([^`]+)`/g,'<code class="px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs mono">$1</code>').replace(/\n/g,'<br>');
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-function formatContent(text) {
-  if(!text) return '<span class="text-gray-500">No content</span>';
-  return escapeHtml(text)
-    .replace(/```([\s\S]*?)```/g, '<pre class="bg-[#0a0a0a] p-2 rounded mt-2 mono text-xs overflow-auto">$1</pre>')
-    .replace(/`([^`]+)`/g, '<code class="bg-[#0a0a0a] px-1 py-0.5 rounded text-xs mono">$1</code>')
-    .replace(/\n/g, '<br>');
-}
-
-async function loadChatHistory(chatId) {
-  clearChatUI();
-  if(!kaggleUrl) {
-    addWelcomeMessage();
-    return;
-  }
-  try {
-    const res = await fetch(`${kaggleUrl}/workspaces/${chatId}/history`);
-    const data = await res.json();
-    if(data.success && data.messages && data.messages.length > 0) {
-      data.messages.forEach(msg => {
-        if(msg.role === 'user') {
-          addMessage('user', msg.content);
-        } else if(msg.role === 'assistant') {
-          addMessage('assistant', msg.content || 'Tool execution');
-          if(msg.tool_results) {
-            msg.tool_results.forEach(tr => {
-              const resultStr = typeof tr.result === 'object' ? JSON.stringify(tr.result).slice(0,800) : String(tr.result).slice(0,800);
-              addMessage('assistant', `🔧 ${tr.tool}: ${resultStr}`, true);
-            });
-          }
-        }
-      });
-    } else {
-      addWelcomeMessage();
-    }
-  } catch(e) {
-    console.log('Failed to load history', e);
-    addWelcomeMessage();
-  }
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-async function sendMessage() {
-  const message = chatInput.value.trim();
-  if(!message) return;
-  const modelType = document.getElementById('model-select').value;
-  addMessage('user', message);
-  chatInput.value = '';
-  chatInput.style.height = '44px';
-
-  // Try Kaggle backend first
-  if(kaggleUrl) {
-    try {
-      const res = await fetch(kaggleUrl + '/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({chat_id: currentWorkspace, message, model_type: modelType})
-      });
-      const data = await res.json();
-      if(data.success) {
-        addMessage('assistant', data.content);
-        if(data.tool_results && data.tool_results.length > 0) {
-          data.tool_results.forEach(tr => {
-            const resultStr = typeof tr.result === 'object' ? JSON.stringify(tr.result).slice(0,800) : String(tr.result).slice(0,800);
-            addMessage('assistant', `🔧 ${tr.tool}: ${resultStr}`, true);
+async function loadHistory(id){
+  clearChat();
+  if(!kaggleUrl){ addWelcome(); return; }
+  try{
+    const r=await fetch(`${kaggleUrl}/workspaces/${id}/history`);
+    const d=await r.json();
+    if(d.success && d.messages && d.messages.length>0){
+      d.messages.forEach(m=>{
+        if(m.role==='user') addMsg('user', m.content);
+        else {
+          addMsg('assistant', m.content||'');
+          if(m.tool_results) m.tool_results.forEach(tr=>{
+            const s=typeof tr.result==='object'?JSON.stringify(tr.result).slice(0,400):String(tr.result).slice(0,400);
+            addMsg('assistant', `🔧 ${tr.tool}: ${s}`, true);
           });
         }
-        if(ntfyTopic) {
-          fetch(`https://ntfy.sh/${ntfyTopic}`, {method: 'POST', body: `New reply in ${currentWorkspace}: ${data.content.slice(0,100)}`, headers: {'Title': 'KaggleOS Reply'}}).catch(()=>{});
-        }
-        refreshFiles();
-        refreshTasks();
-        refreshWorkspaces();
-        return;
-      } else {
-        addMessage('assistant', `❌ Backend error: ${data.error || JSON.stringify(data).slice(0,500)}`);
-        return;
-      }
-    } catch(e) {
-      console.log('Kaggle backend failed', e);
-      addMessage('assistant', `⚠️ Kaggle backend unreachable: ${e.message}. Trying direct OpenRouter...`);
-    }
-  }
-
-  // Fallback: Direct OpenRouter
-  if(!openrouterKey) {
-    const saved = localStorage.getItem('openrouterKey');
-    if(saved) openrouterKey = saved;
-  }
-  if(openrouterKey) {
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + openrouterKey,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://lalibano.github.io',
-          'X-Title': 'KaggleOS'
-        },
-        body: JSON.stringify({
-          model: modelType === 'coding' ? 'anthropic/claude-3.5-sonnet' : modelType === 'fast' ? 'openai/gpt-4o-mini' : 'openai/gpt-4o-mini',
-          messages: [{role: 'system', content: 'You are KaggleOS, based AI agent with terminal access, internet via web_fetch, workspaces per chat. Be concise.'}, {role: 'user', content: message}]
-        })
       });
-      const data = await res.json();
-      if(data.choices) {
-        addMessage('assistant', data.choices[0].message.content);
-      } else {
-        addMessage('assistant', `OpenRouter error: ${JSON.stringify(data).slice(0,500)}`);
-      }
-    } catch(e) {
-      addMessage('assistant', '❌ No Kaggle backend and OpenRouter failed. Set Kaggle URL or OpenRouter key in settings. Error: ' + e.message);
-    }
-  } else {
-    addMessage('assistant', '⚠️ Set Kaggle API URL (when notebook running) or OpenRouter API key in settings (top right gear).');
-  }
+    } else addWelcome();
+  }catch(e){ addWelcome(); }
 }
 
-// Workspaces
-async function refreshWorkspaces() {
-  if(!kaggleUrl) {
-    workspaceList.innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">Start Kaggle kernel to see workspaces</div>';
-    return;
+async function send(){
+  const msg=chatInput.value.trim();
+  if(!msg) return;
+  const model=document.getElementById('model-select').value;
+  addMsg('user', msg);
+  chatInput.value=''; chatInput.style.height='auto';
+  sendBtn.disabled=true;
+
+  if(kaggleUrl){
+    try{
+      const r=await fetch(kaggleUrl+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:currentWorkspace,message:msg,model_type:model})});
+      const d=await r.json();
+      if(d.success){
+        addMsg('assistant', d.content);
+        if(d.tool_results) d.tool_results.forEach(tr=>{
+          const s=typeof tr.result==='object'?JSON.stringify(tr.result).slice(0,500):String(tr.result).slice(0,500);
+          if(s.length>20) addMsg('assistant', `🔧 ${tr.tool}`, true);
+        });
+        refreshFiles(); refreshTasks(); refreshWorkspaces();
+        sendBtn.disabled=false; return;
+      }
+    }catch(e){ console.log(e); }
   }
-  try {
-    const res = await fetch(kaggleUrl + '/workspaces');
-    const data = await res.json();
-    workspaces = data;
-    workspaceList.innerHTML = '';
-    if(data.length === 0) {
-      workspaceList.innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">No workspaces yet - create one</div>';
-      return;
-    }
-    data.forEach(ws => {
-      const div = document.createElement('div');
-      div.className = `p-2.5 rounded-lg cursor-pointer hover:bg-[#1a1a1a] ${ws.chat_id === currentWorkspace ? 'bg-[#1a1a1a] border border-gray-700' : ''}`;
-      div.innerHTML = `<div class="flex items-center justify-between"><span class="text-xs font-medium truncate">${ws.chat_id}</span><span class="text-[10px] text-gray-500">${ws.file_count || 0} files</span></div><div class="text-[10px] text-gray-500 truncate">${ws.message_count || 0} msgs • ${ws.created_at ? new Date(ws.created_at).toLocaleDateString() : ''}</div>`;
-      div.onclick = () => {
-        currentWorkspace = ws.chat_id;
-        localStorage.setItem('currentWorkspace', currentWorkspace);
-        currentWorkspaceEl.textContent = ws.chat_id;
-        refreshWorkspaces();
-        loadChatHistory(ws.chat_id);
-        refreshFiles();
-      };
+  addMsg('assistant','⚠️ Set API URL in settings or add OpenRouter key');
+  sendBtn.disabled=false;
+}
+
+async function refreshWorkspaces(){
+  if(!kaggleUrl){ workspaceList.innerHTML='<div class="text-xs text-zinc-400 p-4 text-center">Start backend</div>'; return; }
+  try{
+    const r=await fetch(kaggleUrl+'/workspaces');
+    const data=await r.json();
+    workspaceList.innerHTML='';
+    data.forEach(ws=>{
+      const div=document.createElement('div');
+      div.className=`group flex items-center gap-3 p-3 rounded-2xl cursor-pointer ${ws.chat_id===currentWorkspace?'bg-zinc-900 dark:bg-white text-white dark:text-black':'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`;
+      div.innerHTML=`<div class="w-8 h-8 rounded-full ${ws.chat_id===currentWorkspace?'bg-white/20 dark:bg-black/10':'bg-zinc-100 dark:bg-zinc-800'} flex items-center justify-center flex-shrink-0"><i class="fas fa-comment text-[12px]"></i></div><div class="flex-1 min-w-0"><div class="text-[13px] font-medium truncate">${ws.chat_id}</div><div class="text-[11px] ${ws.chat_id===currentWorkspace?'text-white/60 dark:text-black/60':'text-zinc-500'}">${ws.message_count||0} msgs • ${ws.file_count||0} files</div></div>`;
+      div.onclick=()=>{ currentWorkspace=ws.chat_id; localStorage.setItem('currentWorkspace',currentWorkspace); currentWorkspaceEl.textContent=ws.chat_id; document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('sidebar-overlay').classList.add('hidden'); refreshWorkspaces(); loadHistory(ws.chat_id); refreshFiles(); };
       workspaceList.appendChild(div);
     });
-  } catch(e) {
-    workspaceList.innerHTML = `<div class="text-xs text-red-400 p-2">Error: ${e.message}</div>`;
-  }
+  }catch(e){ workspaceList.innerHTML=`<div class="text-xs text-red-400 p-3">${e.message}</div>`; }
 }
 
-async function refreshFiles() {
+async function refreshFiles(){
   if(!kaggleUrl) return;
-  const path = document.getElementById('file-path').value || '.';
-  try {
-    const res = await fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/files?path=${encodeURIComponent(path)}`);
-    const data = await res.json();
-    if(data.success) {
-      fileList.innerHTML = '';
-      if(path !== '.') {
-        const up = document.createElement('div');
-        up.className = 'p-1.5 hover:bg-[#1a1a1a] rounded cursor-pointer flex items-center gap-2';
-        up.innerHTML = '<i class="fas fa-level-up-alt text-gray-500"></i> ..';
-        up.onclick = () => { document.getElementById('file-path').value = path.split('/').slice(0,-1).join('/') || '.'; refreshFiles(); };
-        fileList.appendChild(up);
-      }
-      if(data.items.length === 0) {
-        fileList.innerHTML += '<div class="text-gray-500 p-3 text-center text-xs">Empty folder</div>';
-      }
-      data.items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'p-1.5 hover:bg-[#1a1a1a] rounded cursor-pointer flex items-center gap-2 text-xs';
-        div.innerHTML = `<i class="fas ${item.is_dir ? 'fa-folder text-yellow-500' : 'fa-file text-gray-400'}"></i><span class="truncate">${item.name}</span><span class="ml-auto text-[10px] text-gray-500">${item.is_dir ? '' : (item.size/1024).toFixed(1)+'KB'}</span>`;
-        div.onclick = () => {
-          if(item.is_dir) {
-            document.getElementById('file-path').value = item.path;
-            refreshFiles();
-          } else {
-            // Use new file read endpoint
-            fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/file/read?file_path=${encodeURIComponent(item.path)}`).then(r=>r.json()).then(d=>{
-              document.getElementById('file-preview').classList.remove('hidden');
-              document.getElementById('file-content').textContent = d.content || d.error || 'No content';
-            }).catch(()=>{
-              // Fallback via shell
-              fetch(kaggleUrl + '/shell', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: currentWorkspace, cmd: `cat "${item.path}" | head -n 200`})}).then(r=>r.json()).then(res=>{
+  const path=document.getElementById('file-path').value||'.';
+  const pathMobile=document.getElementById('file-path-mobile');
+  if(pathMobile) pathMobile.value=path;
+  try{
+    const r=await fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/files?path=${encodeURIComponent(path)}`);
+    const d=await r.json();
+    const render=(container)=>{
+      if(!container) return;
+      container.innerHTML='';
+      if(d.success && d.items){
+        if(d.items.length===0) container.innerHTML='<div class="text-xs text-zinc-400 p-4 text-center">Empty</div>';
+        d.items.forEach(it=>{
+          const div=document.createElement('div');
+          div.className='flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer';
+          div.innerHTML=`<i class="fas ${it.is_dir?'fa-folder text-amber-500':'fa-file text-zinc-400'} text-xs"></i><span class="text-[13px] truncate flex-1">${it.name}</span><span class="text-[10px] text-zinc-400">${it.is_dir?'':(it.size/1024).toFixed(1)+'KB'}</span>`;
+          div.onclick=()=>{
+            if(it.is_dir){ document.getElementById('file-path').value=it.path; if(pathMobile) pathMobile.value=it.path; refreshFiles(); }
+            else {
+              fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/file/read?file_path=${encodeURIComponent(it.path)}`).then(r=>r.json()).then(res=>{
                 document.getElementById('file-preview').classList.remove('hidden');
-                document.getElementById('file-content').textContent = res.stdout || res.stderr || 'No content';
+                document.getElementById('file-content').textContent=res.content||res.error||'';
               });
-            });
-          }
-        };
-        fileList.appendChild(div);
-      });
-    }
-  } catch(e) {
-    fileList.innerHTML = `<div class="text-xs text-red-400 p-2">${e.message}</div>`;
-  }
+            }
+          };
+          container.appendChild(div);
+        });
+      }
+    };
+    render(document.getElementById('file-list'));
+    render(document.getElementById('file-list-mobile'));
+  }catch(e){}
 }
 
-async function refreshTasks() {
+async function refreshTasks(){
   if(!kaggleUrl) return;
-  try {
-    const res = await fetch(kaggleUrl + '/tasks?chat_id=' + currentWorkspace);
-    const data = await res.json();
-    if(data.length === 0) {
-      tasksList.innerHTML = '<div class="text-gray-500 p-3 text-center text-xs">No tasks</div>';
-      return;
-    }
-    tasksList.innerHTML = '';
-    data.forEach(task => {
-      const div = document.createElement('div');
-      div.className = 'bg-[#1a1a1a] rounded-lg p-2.5';
-      const statusColor = task.status === 'running' ? 'text-green-400 task-running' : task.status === 'completed' ? 'text-blue-400' : 'text-red-400';
-      div.innerHTML = `<div class="flex justify-between items-center"><span class="text-xs font-medium truncate">${task.name}</span><span class="text-[10px] ${statusColor}">${task.status}</span></div><div class="text-[10px] text-gray-500 mt-1">${task.task_id} • ${new Date(task.created_at).toLocaleTimeString()}</div>${task.result ? `<div class="text-[10px] mono bg-[#0a0a0a] p-1.5 rounded mt-1 truncate">${escapeHtml(task.result.slice(0,100))}</div>` : ''}`;
-      tasksList.appendChild(div);
-    });
-  } catch(e) {
-    tasksList.innerHTML = `<div class="text-xs text-red-400 p-2">${e.message}</div>`;
-  }
+  try{
+    const r=await fetch(kaggleUrl+'/tasks?chat_id='+currentWorkspace);
+    const data=await r.json();
+    const render=(container)=>{
+      if(!container) return;
+      if(data.length===0){ container.innerHTML='<div class="text-xs text-zinc-400 p-8 text-center">No tasks<br><span class="text-[11px]">Background jobs appear here</span></div>'; return; }
+      container.innerHTML='';
+      data.forEach(t=>{
+        const div=document.createElement('div');
+        div.className='p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800';
+        const col=t.status==='running'?'text-green-600 dark:text-green-400':t.status==='completed'?'text-blue-600':'text-red-500';
+        div.innerHTML=`<div class="flex justify-between"><span class="text-[13px] font-medium truncate">${t.name}</span><span class="text-[11px] ${col} font-medium">${t.status}</span></div><div class="text-[10px] text-zinc-500 mt-1">${t.task_id}</div>`;
+        container.appendChild(div);
+      });
+    };
+    render(document.getElementById('tasks-list'));
+    render(document.getElementById('tasks-list-mobile'));
+  }catch(e){}
 }
 
 // Events
-sendBtn.onclick = sendMessage;
-chatInput.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-  chatInput.style.height = '44px';
-  chatInput.style.height = Math.min(chatInput.scrollHeight, 128) + 'px';
-});
-
-document.getElementById('new-chat-btn').onclick = async () => {
-  const newId = 'chat_' + Math.random().toString(36).substring(2,8);
-  // Clear UI immediately
-  currentWorkspace = newId;
-  localStorage.setItem('currentWorkspace', currentWorkspace);
-  currentWorkspaceEl.textContent = newId;
-  clearChatUI();
-  addWelcomeMessage();
-  addMessage('assistant', `✅ Created new workspace: ${newId}. This chat is now isolated. Previous chats are saved.`);
-  
-  if(kaggleUrl) {
-    try {
-      await fetch(kaggleUrl + '/workspaces', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: newId})});
-      refreshWorkspaces();
-    } catch(e) {
-      console.log('Failed to create workspace on backend', e);
-    }
-  } else {
+document.getElementById('menu-btn').onclick=()=>{
+  document.getElementById('sidebar').classList.remove('-translate-x-full');
+  document.getElementById('sidebar-overlay').classList.remove('hidden');
+};
+document.getElementById('sidebar-overlay').onclick=()=>{
+  document.getElementById('sidebar').classList.add('-translate-x-full');
+  document.getElementById('sidebar-overlay').classList.add('hidden');
+};
+document.getElementById('new-chat-btn').onclick=async()=>{
+  const id='chat_'+Math.random().toString(36).substring(2,6);
+  currentWorkspace=id; localStorage.setItem('currentWorkspace',id); currentWorkspaceEl.textContent=id;
+  clearChat(); addWelcome();
+  document.getElementById('sidebar').classList.add('-translate-x-full');
+  document.getElementById('sidebar-overlay').classList.add('hidden');
+  if(kaggleUrl){
+    await fetch(kaggleUrl+'/workspaces',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:id})});
     refreshWorkspaces();
   }
-  refreshFiles();
+};
+document.getElementById('send-btn').onclick=send;
+chatInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+});
+chatInput.addEventListener('input',()=>{
+  chatInput.style.height='auto';
+  chatInput.style.height=Math.min(chatInput.scrollHeight,128)+'px';
+});
+document.querySelectorAll('.prompt-card').forEach(c=>{
+  c.onclick=()=>{ chatInput.value=c.querySelector('span').textContent.replace('🌤️ ','').replace('📁 ','').replace('🐍 ','').replace('💻 ',''); chatInput.focus(); };
+});
+document.getElementById('refresh-files').onclick=refreshFiles;
+document.getElementById('terminal-run').onclick=async()=>{
+  const cmd=document.getElementById('terminal-input').value;
+  if(!cmd||!kaggleUrl) return;
+  document.getElementById('terminal-output').textContent='$ '+cmd+'\nRunning...';
+  const r=await fetch(kaggleUrl+'/shell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:currentWorkspace,cmd})});
+  const d=await r.json();
+  document.getElementById('terminal-output').textContent=`$ ${cmd}\n${d.stdout||''}${d.stderr?'\nERR:'+d.stderr:''}\nExit:${d.returncode}`;
+};
+document.getElementById('terminal-run-mobile').onclick=async()=>{
+  const cmd=document.getElementById('terminal-input-mobile').value;
+  if(!cmd||!kaggleUrl) return;
+  document.getElementById('terminal-output-mobile').textContent='$ '+cmd+'\nRunning...';
+  const r=await fetch(kaggleUrl+'/shell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:currentWorkspace,cmd})});
+  const d=await r.json();
+  document.getElementById('terminal-output-mobile').textContent=`$ ${cmd}\n${d.stdout||''}${d.stderr?'\nERR:'+d.stderr:''}\nExit:${d.returncode}`;
 };
 
-document.getElementById('clear-chat').onclick = () => {
-  if(confirm(`Clear chat UI for ${currentWorkspace}? (History still saved on backend)`)) {
-    clearChatUI();
-    addWelcomeMessage();
-  }
-};
-
-document.getElementById('reload-history').onclick = () => {
-  loadChatHistory(currentWorkspace);
-};
-
-document.getElementById('refresh-files').onclick = refreshFiles;
-document.getElementById('refresh-tasks').onclick = refreshTasks;
-document.getElementById('terminal-run').onclick = async () => {
-  const cmd = document.getElementById('terminal-input').value;
-  if(!cmd) return;
-  if(!kaggleUrl) {
-    terminalOutput.textContent = 'Set Kaggle API URL first';
-    return;
-  }
-  terminalOutput.textContent = `$ ${cmd}\nRunning...`;
-  try {
-    const res = await fetch(kaggleUrl + '/shell', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: currentWorkspace, cmd})});
-    const data = await res.json();
-    terminalOutput.textContent = `$ ${cmd}\n${data.stdout || ''}${data.stderr ? '\nERR: '+data.stderr : ''}\n\nExit: ${data.returncode}`;
-  } catch(e) {
-    terminalOutput.textContent = `Error: ${e.message}`;
-  }
-};
-
-// Tabs
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('border-white','text-white'); b.classList.add('border-transparent','text-gray-400'); });
-    btn.classList.add('border-white','text-white'); btn.classList.remove('border-transparent','text-gray-400');
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
-    if(btn.dataset.tab === 'files') refreshFiles();
-    if(btn.dataset.tab === 'tasks') refreshTasks();
+// Tabs desktop
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>{ x.classList.remove('bg-white','dark:bg-zinc-700','shadow-sm'); x.classList.add('text-zinc-500'); });
+    b.classList.add('bg-white','dark:bg-zinc-700','shadow-sm'); b.classList.remove('text-zinc-500');
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('hidden'));
+    document.getElementById('tab-'+b.dataset.tab).classList.remove('hidden');
+    document.getElementById('tab-'+b.dataset.tab).classList.add('flex');
+    if(b.dataset.tab==='files') refreshFiles();
+    if(b.dataset.tab==='tasks') refreshTasks();
   };
+});
+// Mobile tabs
+document.querySelectorAll('.mobile-tab').forEach(b=>{
+  b.onclick=()=>{
+    const tab=b.dataset.mobileTab;
+    if(tab==='chat'){
+      document.querySelectorAll('[id^=mobile-]').forEach(x=>x.classList.add('hidden'));
+      document.querySelectorAll('.mobile-tab').forEach(x=>{ x.classList.remove('bg-black','dark:bg-white','text-white','dark:text-black'); x.classList.add('text-zinc-400'); });
+      b.classList.add('bg-black','dark:bg-white','text-white','dark:text-black'); b.classList.remove('text-zinc-400');
+    } else {
+      document.getElementById('mobile-'+tab).classList.remove('hidden');
+      document.getElementById('mobile-'+tab).classList.add('flex');
+    }
+    if(tab==='files') refreshFiles();
+    if(tab==='tasks') refreshTasks();
+  };
+});
+document.querySelectorAll('.close-mobile').forEach(b=>{
+  b.onclick=()=>{ b.closest('[id^=mobile-]').classList.add('hidden'); };
 });
 
 // Settings
-document.getElementById('settings-btn').onclick = () => document.getElementById('settings-modal').classList.remove('hidden');
-document.getElementById('settings-modal').onclick = (e) => { if(e.target.id === 'settings-modal') e.currentTarget.classList.add('hidden'); };
-document.getElementById('settings-cancel').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
-document.getElementById('settings-save').onclick = () => {
-  const key = document.getElementById('openrouter-key').value;
-  const ntfy = document.getElementById('settings-ntfy').value;
-  const gmail = document.getElementById('settings-gmail').value;
-  const kurl = document.getElementById('settings-kaggle-url').value;
-  if(key && !key.startsWith('••••')) localStorage.setItem('openrouterKey', key);
-  if(ntfy) { localStorage.setItem('ntfyTopic', ntfy); ntfyTopic = ntfy; document.getElementById('ntfy-topic').value = ntfy; }
-  if(kurl) { localStorage.setItem('kaggleUrl', kurl); kaggleUrl = kurl; document.getElementById('kaggle-url').value = kurl; }
-  if(gmail) localStorage.setItem('gmail', gmail);
+document.getElementById('settings-btn').onclick=()=>document.getElementById('settings-modal').classList.remove('hidden');
+document.getElementById('settings-modal').onclick=e=>{ if(e.target.id==='settings-modal') e.currentTarget.classList.add('hidden'); };
+document.getElementById('settings-cancel').onclick=()=>document.getElementById('settings-modal').classList.add('hidden');
+document.getElementById('settings-save').onclick=()=>{
+  const k=document.getElementById('openrouter-key').value;
+  const n=document.getElementById('settings-ntfy').value;
+  const u=document.getElementById('settings-kaggle-url').value;
+  if(k && !k.startsWith('••')) localStorage.setItem('openrouterKey',k);
+  if(n){ localStorage.setItem('ntfyTopic',n); document.getElementById('ntfy-topic').value=n; }
+  if(u){ localStorage.setItem('kaggleUrl',u); kaggleUrl=u; document.getElementById('kaggle-url').value=u; }
   document.getElementById('settings-modal').classList.add('hidden');
-  checkKaggleStatus();
-  refreshWorkspaces();
-  loadChatHistory(currentWorkspace);
+  checkStatus(); refreshWorkspaces(); loadHistory(currentWorkspace);
 };
 
-document.getElementById('ntfy-topic').addEventListener('change', (e) => { localStorage.setItem('ntfyTopic', e.target.value); ntfyTopic = e.target.value; });
-document.getElementById('kaggle-url').addEventListener('change', (e) => { localStorage.setItem('kaggleUrl', e.target.value); kaggleUrl = e.target.value; checkKaggleStatus(); refreshWorkspaces(); loadChatHistory(currentWorkspace); });
-
-// Auto-refresh
-setInterval(() => { if(kaggleUrl) { checkKaggleStatus(); refreshTasks(); } }, 10000);
-setTimeout(() => { refreshWorkspaces(); }, 1000);
+setInterval(()=>{ if(kaggleUrl){ checkStatus(); refreshTasks(); } }, 10000);
+setTimeout(()=>refreshWorkspaces(), 800);
 </script>
 </body>
 </html>
