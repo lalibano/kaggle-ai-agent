@@ -1,15 +1,15 @@
 {
-  "kaggle_url": "https://night-mil-relation-spread.trycloudflare.com",
+  "kaggle_url": "https://divisions-submitting-falls-essays.trycloudflare.com",
   "kaggle_notebook_url": "https://www.kaggle.com/code/amaankhan231/kaggleos-ai-agent-v4-fixed-chat-history",
-  "cloudflare_url": "https://night-mil-relation-spread.trycloudflare.com",
+  "cloudflare_url": "https://divisions-submitting-falls-essays.trycloudflare.com",
   "ntfy_topic": "kaggle-agent-amaankhan231",
   "fixed_website": "https://lalibano.github.io/kaggle-ai-agent/",
   "github_repo": "https://github.com/lalibano/kaggle-ai-agent",
-  "version": "2.5",
-  "last_updated": "2026-09-15T13:30:00Z",
+  "version": "2.6",
+  "last_updated": "2026-09-15T13:50:00Z",
   "status": "running",
-  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "ntfy_gmail_notifications", "permission_guard", "cloudflare_tunnel", "keep_alive", "chat_history_persist", "internet_web_fetch", "ssl_fix", "natural_answer"],
+  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "ntfy_gmail_notifications", "permission_guard", "cloudflare_tunnel", "keep_alive", "chat_history_persist", "internet_web_fetch", "ssl_fix", "natural_answer", "composio_path_fix"],
   "fixes": {
-    "weather_json": "FIXED - Now does 2-step LLM: after web_fetch, second call summarizes to natural answer like 'Weather in Kolkata: 87°F cloudy' instead of raw JSON"
+    "composio_login": "FIXED - shell_exec now includes ~/.local/bin in PATH, handles composio login --no-wait to give auth link, tries full paths"
   }
 }
