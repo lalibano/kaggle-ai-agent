@@ -1,8 +1,13 @@
 {
-  "kaggle_url": "",
+  "kaggle_url": "https://75717f8ec918878eec.gradio.live",
+  "kaggle_notebook_url": "https://www.kaggle.com/code/amaankhan231/kaggleos-ai-agent-terminal-workspaces",
+  "gradio_url": "https://75717f8ec918878eec.gradio.live",
   "ntfy_topic": "kaggle-agent-amaankhan231",
-  "version": "1.0",
-  "last_updated": "2026-09-15T00:00:00Z",
-  "fixed_website": "https://amaankhan231.github.io/kaggle-ai-agent/",
-  "instructions": "This file is auto-updated by Kaggle kernel when it starts. It contains current public tunnel URL."
+  "fixed_website": "https://lalibano.github.io/kaggle-ai-agent/",
+  "github_repo": "https://github.com/lalibano/kaggle-ai-agent",
+  "version": "2.0",
+  "last_updated": "2026-09-15T12:10:00Z",
+  "status": "running",
+  "openrouter_models": ["anthropic/claude-3.5-sonnet", "openai/gpt-4o-mini", "meta-llama/llama-3.3-70b-instruct"],
+  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "ntfy_gmail_notifications", "permission_guard"]
 }
