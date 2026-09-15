@@ -5,9 +5,9 @@
   "ntfy_topic": "kaggle-agent-amaankhan231",
   "fixed_website": "https://lalibano.github.io/kaggle-ai-agent/",
   "github_repo": "https://github.com/lalibano/kaggle-ai-agent",
-  "version": "2.7",
-  "last_updated": "2026-09-15T14:45:00Z",
+  "version": "3.0",
+  "last_updated": "2026-09-15T15:30:00Z",
   "status": "running",
-  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "background_run", "autonomous_agent", "chat_history_persist", "internet_web_fetch", "ssl_fix", "natural_answer", "composio_path_fix"],
-  "agent_mode": "Autonomous - breaks goals into steps, executes 2-4 tools per response, uses background_run for heavy tasks, parallel execution up to 4 workers"
+  "ui": "DRASTICALLY new - clean, simple, mobile friendly, bottom tabs, drawer, minimal",
+  "features": ["autonomous_agent", "parallel_background_tasks", "chat_history_persist", "internet_ssl_fix", "natural_answers", "composio_path_fix", "mobile_friendly"]
 }
