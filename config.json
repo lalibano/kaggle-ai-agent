@@ -1,17 +1,15 @@
 {
-  "kaggle_url": "https://officer-disk-individuals-floating.trycloudflare.com",
+  "kaggle_url": "https://night-mil-relation-spread.trycloudflare.com",
   "kaggle_notebook_url": "https://www.kaggle.com/code/amaankhan231/kaggleos-ai-agent-v4-fixed-chat-history",
-  "cloudflare_url": "https://officer-disk-individuals-floating.trycloudflare.com",
+  "cloudflare_url": "https://night-mil-relation-spread.trycloudflare.com",
   "ntfy_topic": "kaggle-agent-amaankhan231",
   "fixed_website": "https://lalibano.github.io/kaggle-ai-agent/",
   "github_repo": "https://github.com/lalibano/kaggle-ai-agent",
-  "version": "2.4",
-  "last_updated": "2026-09-15T13:13:00Z",
+  "version": "2.5",
+  "last_updated": "2026-09-15T13:30:00Z",
   "status": "running",
-  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "ntfy_gmail_notifications", "permission_guard", "cloudflare_tunnel", "keep_alive", "chat_history_persist", "internet_web_fetch", "ssl_fix_wttr"],
+  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "ntfy_gmail_notifications", "permission_guard", "cloudflare_tunnel", "keep_alive", "chat_history_persist", "internet_web_fetch", "ssl_fix", "natural_answer"],
   "fixes": {
-    "chat_saving": "FIXED",
-    "new_workspace": "FIXED",
-    "internet_ssl": "FIXED - web_fetch now uses verify=False and curl -k fallback for expired certs like wttr.in"
+    "weather_json": "FIXED - Now does 2-step LLM: after web_fetch, second call summarizes to natural answer like 'Weather in Kolkata: 87°F cloudy' instead of raw JSON"
   }
 }
