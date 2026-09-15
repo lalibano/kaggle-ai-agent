@@ -1,16 +1,18 @@
 {
-  "kaggle_url": "https://par-clothes-truth-edmonton.trycloudflare.com",
+  "kaggle_url": "https://pamela-animals-warehouse-beverage.trycloudflare.com",
   "kaggle_notebook_url": "https://www.kaggle.com/code/amaankhan231/kaggleos-ai-agent-v4-fixed-chat-history",
-  "kaggle_notebook_url_v3": "https://www.kaggle.com/code/amaankhan231/kaggleos-ai-agent-terminal-workspaces",
-  "gradio_url": "https://par-clothes-truth-edmonton.trycloudflare.com",
-  "cloudflare_url": "https://par-clothes-truth-edmonton.trycloudflare.com",
+  "cloudflare_url": "https://pamela-animals-warehouse-beverage.trycloudflare.com",
   "ntfy_topic": "kaggle-agent-amaankhan231",
   "fixed_website": "https://lalibano.github.io/kaggle-ai-agent/",
   "github_repo": "https://github.com/lalibano/kaggle-ai-agent",
-  "version": "2.2",
-  "last_updated": "2026-09-15T12:57:00Z",
+  "version": "2.3",
+  "last_updated": "2026-09-15T13:03:00Z",
   "status": "running",
   "openrouter_models": ["anthropic/claude-3.5-sonnet", "openai/gpt-4o-mini", "meta-llama/llama-3.3-70b-instruct"],
   "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "ntfy_gmail_notifications", "permission_guard", "cloudflare_tunnel", "keep_alive", "chat_history_persist", "internet_web_fetch"],
-  "fixes": ["Fixed chat saving - now loads history via /workspaces/{id}/history", "Fixed new workspace - clears UI and creates isolated chat", "Fixed internet - web_fetch + shell curl both work, fixed null content bug in agent"]
+  "fixes": {
+    "chat_saving": "FIXED - Backend now has /workspaces/{id}/history endpoint, frontend loads history via loadChatHistory(), saves to memory.json",
+    "new_workspace": "FIXED - Frontend now clears UI with clearChatUI(), creates isolated workspace, stores currentWorkspace in localStorage",
+    "internet": "FIXED - web_fetch works (tested with api.github.com 200), shell curl works, fixed null content bug that broke tool calling"
+  }
 }
