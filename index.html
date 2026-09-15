@@ -43,7 +43,7 @@ body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
 </div>
 </header>
 
-<div class="flex flex-1 overflow-hidden relative">
+<div class="flex flex-1 overflow-hidden relative pb-14 md:pb-0">
 <!-- Sidebar - Workspaces Drawer -->
 <div id="sidebar" class="absolute md:relative inset-y-0 left-0 w-[300px] bg-white dark:bg-[#111111] border-r border-zinc-200 dark:border-zinc-800 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col">
 <div class="p-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -135,11 +135,19 @@ body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
 <div class="flex gap-2 mb-3">
 <input id="file-path" type="text" value="." class="flex-1 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 text-xs mono border-0">
 <button id="refresh-files" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-rotate text-[10px]"></i></button>
+<button id="download-all-desktop" class="h-8 px-3 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black text-xs font-medium"><i class="fas fa-download mr-1"></i> All</button>
 </div>
 <div id="file-list" class="flex-1 overflow-y-auto scrollbar-none space-y-1">
 <div class="text-xs text-zinc-400 p-4 text-center">No files</div>
 </div>
 <div id="file-preview" class="mt-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hidden">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-medium" id="preview-filename">File</span>
+<div class="flex gap-2">
+<button id="copy-file-btn" class="h-7 px-3 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px]">Copy</button>
+<button id="download-file-btn" class="h-7 px-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-[11px]"><i class="fas fa-download mr-1"></i> Download</button>
+</div>
+</div>
 <pre id="file-content" class="text-[11px] mono whitespace-pre-wrap max-h-40 overflow-auto"></pre>
 </div>
 </div>
@@ -156,8 +164,8 @@ body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
 </div>
 </div>
 
-<!-- Mobile Bottom Tabs -->
-<div class="md:hidden h-14 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111111] flex items-center justify-around px-2">
+<!-- Mobile Bottom Tabs - Always visible, high z-index -->
+<div class="md:hidden h-14 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#111111] flex items-center justify-around px-2 fixed bottom-0 left-0 right-0 z-30">
 <button data-mobile-tab="chat" class="mobile-tab flex flex-col items-center gap-1 py-2 px-4 rounded-full bg-black dark:bg-white text-white dark:text-black">
 <i class="fas fa-comment text-[14px]"></i><span class="text-[10px] font-medium">Chat</span>
 </button>
@@ -172,19 +180,29 @@ body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
 </button>
 </div>
 
-<!-- Mobile Sheets -->
-<div id="mobile-files" class="md:hidden absolute inset-0 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
+<!-- Mobile Sheets - Fixed bottom bar visible -->
+<div id="mobile-files" class="md:hidden absolute top-0 left-0 right-0 bottom-14 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
 <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
 <h3 class="font-semibold">Files</h3>
+<div class="flex gap-2">
+<button id="download-all-btn" class="h-8 px-3 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black text-xs font-medium"><i class="fas fa-download mr-1"></i> Download</button>
 <button class="close-mobile w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-xmark text-xs"></i></button>
+</div>
 </div>
 <div class="p-3 flex-1 flex flex-col overflow-hidden">
 <input id="file-path-mobile" type="text" value="." class="h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 text-xs mono border-0 mb-3">
 <div id="file-list-mobile" class="flex-1 overflow-y-auto space-y-1"></div>
+<div id="file-preview-mobile" class="mt-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hidden">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-medium" id="preview-filename-mobile">File</span>
+<button id="download-file-mobile" class="h-7 px-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-[11px]"><i class="fas fa-download mr-1"></i> Download</button>
+</div>
+<pre id="file-content-mobile" class="text-[11px] mono whitespace-pre-wrap max-h-32 overflow-auto"></pre>
+</div>
 </div>
 </div>
 
-<div id="mobile-terminal" class="md:hidden absolute inset-0 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
+<div id="mobile-terminal" class="md:hidden absolute top-0 left-0 right-0 bottom-14 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
 <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
 <h3 class="font-semibold">Terminal</h3>
 <button class="close-mobile w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-xmark text-xs"></i></button>
@@ -196,7 +214,7 @@ body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
 </div>
 </div>
 
-<div id="mobile-tasks" class="md:hidden absolute inset-0 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
+<div id="mobile-tasks" class="md:hidden absolute top-0 left-0 right-0 bottom-14 bg-white dark:bg-[#0a0a0a] z-20 hidden flex-col">
 <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
 <h3 class="font-semibold">Tasks</h3>
 <button class="close-mobile w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><i class="fas fa-xmark text-xs"></i></button>
@@ -363,6 +381,41 @@ async function refreshWorkspaces(){
   }catch(e){ workspaceList.innerHTML=`<div class="text-xs text-red-400 p-3">${e.message}</div>`; }
 }
 
+let currentPreviewFile = null;
+let currentPreviewContent = '';
+
+function downloadFile(filename, content){
+  const blob = new Blob([content], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.split('/').pop() || 'file.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function downloadAllFiles(){
+  if(!kaggleUrl) return;
+  try{
+    const r=await fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/files?path=.`);
+    const d=await r.json();
+    if(d.success && d.items){
+      for(const it of d.items){
+        if(!it.is_dir){
+          try{
+            const res=await fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/file/read?file_path=${encodeURIComponent(it.path)}`);
+            const data=await res.json();
+            if(data.content) downloadFile(it.name, data.content);
+            await new Promise(r=>setTimeout(r,300));
+          }catch(e){ console.log('Download failed', it.name, e); }
+        }
+      }
+    }
+  }catch(e){ alert('Download failed: '+e.message); }
+}
+
 async function refreshFiles(){
   if(!kaggleUrl) return;
   const path=document.getElementById('file-path').value||'.';
@@ -371,31 +424,53 @@ async function refreshFiles(){
   try{
     const r=await fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/files?path=${encodeURIComponent(path)}`);
     const d=await r.json();
-    const render=(container)=>{
+    const render=(container, isMobile=false)=>{
       if(!container) return;
       container.innerHTML='';
       if(d.success && d.items){
         if(d.items.length===0) container.innerHTML='<div class="text-xs text-zinc-400 p-4 text-center">Empty</div>';
         d.items.forEach(it=>{
           const div=document.createElement('div');
-          div.className='flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer';
-          div.innerHTML=`<i class="fas ${it.is_dir?'fa-folder text-amber-500':'fa-file text-zinc-400'} text-xs"></i><span class="text-[13px] truncate flex-1">${it.name}</span><span class="text-[10px] text-zinc-400">${it.is_dir?'':(it.size/1024).toFixed(1)+'KB'}</span>`;
-          div.onclick=()=>{
+          div.className='group flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800';
+          div.innerHTML=`<i class="fas ${it.is_dir?'fa-folder text-amber-500':'fa-file text-zinc-400'} text-xs"></i><span class="text-[13px] truncate flex-1 cursor-pointer" data-path="${it.path}">${it.name}</span><span class="text-[10px] text-zinc-400">${it.is_dir?'':(it.size/1024).toFixed(1)+'KB'}</span><button class="download-btn opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black flex items-center justify-center flex-shrink-0" data-file="${it.path}"><i class="fas fa-download text-[9px]"></i></button>`;
+          const nameSpan=div.querySelector('[data-path]');
+          nameSpan.onclick=()=>{
             if(it.is_dir){ document.getElementById('file-path').value=it.path; if(pathMobile) pathMobile.value=it.path; refreshFiles(); }
             else {
+              currentPreviewFile=it.path;
               fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/file/read?file_path=${encodeURIComponent(it.path)}`).then(r=>r.json()).then(res=>{
-                document.getElementById('file-preview').classList.remove('hidden');
-                document.getElementById('file-content').textContent=res.content||res.error||'';
+                currentPreviewContent=res.content||'';
+                if(isMobile){
+                  document.getElementById('file-preview-mobile').classList.remove('hidden');
+                  document.getElementById('file-content-mobile').textContent=res.content||res.error||'';
+                  document.getElementById('preview-filename-mobile').textContent=it.name;
+                } else {
+                  document.getElementById('file-preview').classList.remove('hidden');
+                  document.getElementById('file-content').textContent=res.content||res.error||'';
+                  document.getElementById('preview-filename').textContent=it.name;
+                }
               });
             }
           };
+          const dlBtn=div.querySelector('.download-btn');
+          if(dlBtn && !it.is_dir){
+            dlBtn.onclick=async(e)=>{
+              e.stopPropagation();
+              try{
+                const res=await fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/file/read?file_path=${encodeURIComponent(it.path)}`);
+                const data=await res.json();
+                if(data.content) downloadFile(it.name, data.content);
+                else alert('Cannot download: '+ (data.error||'empty'));
+              }catch(err){ alert('Download error: '+err.message); }
+            };
+          } else if(dlBtn) dlBtn.style.display='none';
           container.appendChild(div);
         });
       }
     };
-    render(document.getElementById('file-list'));
-    render(document.getElementById('file-list-mobile'));
-  }catch(e){}
+    render(document.getElementById('file-list'), false);
+    render(document.getElementById('file-list-mobile'), true);
+  }catch(e){ console.log('refreshFiles error', e); }
 }
 
 async function refreshTasks(){
@@ -452,6 +527,19 @@ document.querySelectorAll('.prompt-card').forEach(c=>{
   c.onclick=()=>{ chatInput.value=c.querySelector('span').textContent.replace('🌤️ ','').replace('📁 ','').replace('🐍 ','').replace('💻 ',''); chatInput.focus(); };
 });
 document.getElementById('refresh-files').onclick=refreshFiles;
+document.getElementById('download-all-desktop')?.addEventListener('click', downloadAllFiles);
+document.getElementById('download-all-btn')?.addEventListener('click', downloadAllFiles);
+document.getElementById('download-file-btn')?.addEventListener('click', ()=>{
+  if(currentPreviewFile && currentPreviewContent) downloadFile(currentPreviewFile, currentPreviewContent);
+});
+document.getElementById('download-file-mobile')?.addEventListener('click', ()=>{
+  if(currentPreviewFile && currentPreviewContent) downloadFile(currentPreviewFile, currentPreviewContent);
+});
+document.getElementById('copy-file-btn')?.addEventListener('click', ()=>{
+  if(currentPreviewContent){
+    navigator.clipboard.writeText(currentPreviewContent).then(()=>alert('Copied!'));
+  }
+});
 document.getElementById('terminal-run').onclick=async()=>{
   const cmd=document.getElementById('terminal-input').value;
   if(!cmd||!kaggleUrl) return;
