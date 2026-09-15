@@ -33,7 +33,7 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 <div class="flex items-center gap-2">
 <button id="settings-btn" class="p-2 hover:bg-gray-800 rounded-lg"><i class="fas fa-cog text-gray-400 text-sm"></i></button>
-<a href="https://github.com" target="_blank" class="p-2 hover:bg-gray-800 rounded-lg"><i class="fab fa-github text-gray-400 text-sm"></i></a>
+<a href="https://github.com/lalibano/kaggle-ai-agent" target="_blank" class="p-2 hover:bg-gray-800 rounded-lg"><i class="fab fa-github text-gray-400 text-sm"></i></a>
 </div>
 </header>
 
@@ -46,7 +46,6 @@ body { font-family: 'Inter', sans-serif; }
 </button>
 </div>
 <div class="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1" id="workspace-list">
-<!-- Workspaces will be listed here -->
 <div class="text-xs text-gray-500 p-3 text-center">No workspaces yet</div>
 </div>
 <div class="p-3 border-t border-gray-800 space-y-2">
@@ -58,6 +57,9 @@ body { font-family: 'Inter', sans-serif; }
 <p class="text-[11px] text-gray-400 mb-1">Kaggle API URL</p>
 <input id="kaggle-url" type="text" placeholder="https://xxx.trycloudflare.com" class="w-full bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 text-xs mono">
 <p class="text-[10px] text-gray-500 mt-1">Auto-updated when Kaggle runs</p>
+</div>
+<div id="internet-status" class="bg-[#1a1a1a] rounded-lg p-2 text-[11px]">
+<span class="text-gray-400">Internet:</span> <span id="internet-text" class="text-gray-500">Checking...</span>
 </div>
 </div>
 </div>
@@ -80,37 +82,23 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 <div class="flex gap-2">
 <button id="clear-chat" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800">Clear</button>
+<button id="reload-history" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800"><i class="fas fa-sync"></i> Reload</button>
 </div>
 </div>
 
 <!-- Messages -->
 <div id="chat-messages" class="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-3">
-<div class="flex gap-3">
-<div class="w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-xs"></i></div>
-<div class="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble">
-<p class="text-sm">👋 I'm <b>KaggleOS</b> — your autonomous AI agent running on Kaggle.</p>
-<p class="text-xs text-gray-400 mt-2">I have:</p>
-<ul class="text-xs text-gray-300 list-disc ml-4 mt-1 space-y-0.5">
-<li>Terminal access (install OK, delete needs confirm)</li>
-<li>File management per workspace</li>
-<li>Parallel background tasks</li>
-<li>Notifications via ntfy.sh + Gmail</li>
-<li>Workspaces persist to GitHub</li>
-</ul>
-<p class="text-xs text-gray-400 mt-3">Try: <code class="bg-[#0a0a0a] px-1.5 py-0.5 rounded text-xs">ls -la</code> or <code class="bg-[#0a0a0a] px-1.5 py-0.5 rounded">train a model on titanic</code></p>
-</div>
-</div>
 </div>
 
 <!-- Input -->
 <div class="p-3 border-t border-gray-800 bg-[#111111]">
 <div class="flex gap-2">
-<textarea id="chat-input" placeholder="Ask agent to do anything... (Shift+Enter for new line)" class="flex-1 bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:border-violet-500 min-h-[44px] max-h-32" rows="1"></textarea>
+<textarea id="chat-input" placeholder="Ask agent to do anything... (Shift+Enter for new line) - try 'fetch https://api.github.com' for internet test" class="flex-1 bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:border-violet-500 min-h-[44px] max-h-32" rows="1"></textarea>
 <button id="send-btn" class="bg-white text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 flex items-center gap-2">
 <i class="fas fa-paper-plane text-xs"></i> Send
 </button>
 </div>
-<p class="text-[10px] text-gray-500 mt-2 px-1">Enter to send • Shift+Enter new line • Agent can run multiple tasks in parallel</p>
+<p class="text-[10px] text-gray-500 mt-2 px-1">Enter to send • Shift+Enter new line • Agent can run multiple tasks in parallel • Has internet via web_fetch + shell curl</p>
 </div>
 </div>
 
@@ -141,11 +129,11 @@ body { font-family: 'Inter', sans-serif; }
 <!-- Terminal Tab -->
 <div id="tab-terminal" class="tab-content flex-1 flex flex-col overflow-hidden hidden">
 <div class="p-2 flex gap-1">
-<input id="terminal-input" type="text" placeholder="ls -la, pip install, python script.py..." class="flex-1 bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1.5 text-xs mono">
+<input id="terminal-input" type="text" placeholder="ls -la, pip install, python script.py, curl https://api.github.com" class="flex-1 bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1.5 text-xs mono">
 <button id="terminal-run" class="bg-[#1a1a1a] hover:bg-gray-800 px-3 py-1 rounded text-xs">Run</button>
 </div>
 <div id="terminal-output" class="flex-1 bg-[#0a0a0a] m-2 rounded-lg p-3 overflow-auto scrollbar-thin mono text-[11px] whitespace-pre-wrap">
-<span class="text-gray-500">Terminal ready. Install doesn't need permission, delete needs confirm.</span>
+<span class="text-gray-500">Terminal ready. Has internet! Try: curl https://api.github.com or pip install. Install doesn't need permission, delete needs confirm.</span>
 </div>
 </div>
 
@@ -194,7 +182,7 @@ body { font-family: 'Inter', sans-serif; }
 
 <script>
 // State
-let currentWorkspace = 'default';
+let currentWorkspace = localStorage.getItem('currentWorkspace') || 'default';
 let kaggleUrl = localStorage.getItem('kaggleUrl') || '';
 let ntfyTopic = localStorage.getItem('ntfyTopic') || 'kaggle-agent-amaankhan231';
 let openrouterKey = localStorage.getItem('openrouterKey') || '';
@@ -218,9 +206,11 @@ document.getElementById('ntfy-topic').value = ntfyTopic;
 document.getElementById('openrouter-key').value = openrouterKey ? '••••••••' + openrouterKey.slice(-10) : '';
 document.getElementById('settings-ntfy').value = ntfyTopic;
 document.getElementById('settings-kaggle-url').value = kaggleUrl;
+currentWorkspaceEl.textContent = currentWorkspace;
 checkKaggleStatus();
+loadChatHistory(currentWorkspace);
 
-// Load config.json for auto tunnel URL (GitHub Pages deployment will update this)
+// Load config.json for auto tunnel URL
 fetch('config.json').then(r => r.json()).then(cfg => {
   if(cfg.kaggle_url && cfg.kaggle_url !== kaggleUrl) {
     kaggleUrl = cfg.kaggle_url;
@@ -228,6 +218,13 @@ fetch('config.json').then(r => r.json()).then(cfg => {
     document.getElementById('kaggle-url').value = kaggleUrl;
     document.getElementById('settings-kaggle-url').value = kaggleUrl;
     checkKaggleStatus();
+    refreshWorkspaces();
+  }
+  if(cfg.ntfy_topic) {
+    ntfyTopic = cfg.ntfy_topic;
+    localStorage.setItem('ntfyTopic', ntfyTopic);
+    document.getElementById('ntfy-topic').value = ntfyTopic;
+    document.getElementById('settings-ntfy').value = ntfyTopic;
   }
 }).catch(() => {});
 
@@ -235,15 +232,57 @@ function checkKaggleStatus() {
   if(!kaggleUrl) {
     statusDot.className = 'w-2 h-2 bg-gray-500 rounded-full ml-3';
     statusText.textContent = 'Offline - Start Kaggle kernel';
+    document.getElementById('internet-text').textContent = 'No backend';
+    document.getElementById('internet-text').className = 'text-red-400';
     return;
   }
   fetch(kaggleUrl + '/', {mode: 'cors'}).then(r => r.json()).then(data => {
     statusDot.className = 'w-2 h-2 bg-green-500 rounded-full ml-3';
     statusText.textContent = `Online • ${data.workspaces || 0} ws • ${data.tasks || 0} tasks`;
+    // Test internet via backend
+    fetch(kaggleUrl + '/shell', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: 'default', cmd: 'curl -s -m 5 https://api.github.com | head -n 1 && echo INTERNET_OK || echo NO_INTERNET'})
+    }).then(r=>r.json()).then(d=>{
+      if(d.stdout && d.stdout.includes('INTERNET_OK')) {
+        document.getElementById('internet-text').textContent = '✅ Online (curl + web_fetch)';
+        document.getElementById('internet-text').className = 'text-green-400';
+      } else {
+        document.getElementById('internet-text').textContent = '❌ No internet in Kaggle';
+        document.getElementById('internet-text').className = 'text-red-400';
+      }
+    }).catch(()=>{
+      document.getElementById('internet-text').textContent = 'Checking...';
+    });
   }).catch(() => {
     statusDot.className = 'w-2 h-2 bg-yellow-500 rounded-full ml-3';
     statusText.textContent = 'Kaggle URL set but unreachable';
+    document.getElementById('internet-text').textContent = 'Unreachable';
+    document.getElementById('internet-text').className = 'text-yellow-400';
   });
+}
+
+function clearChatUI() {
+  chatMessages.innerHTML = '';
+}
+
+function addWelcomeMessage() {
+  const div = document.createElement('div');
+  div.className = 'flex gap-3';
+  div.innerHTML = `
+      <div class="w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-xs"></i></div>
+      <div class="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble">
+        <p class="text-sm">👋 I'm <b>KaggleOS</b> — workspace <b>${currentWorkspace}</b></p>
+        <p class="text-xs text-gray-400 mt-2">I have internet! Try:</p>
+        <ul class="text-xs text-gray-300 list-disc ml-4 mt-1 space-y-0.5">
+          <li><code class="bg-[#0a0a0a] px-1 py-0.5 rounded">fetch https://api.github.com</code></li>
+          <li><code class="bg-[#0a0a0a] px-1 py-0.5 rounded">ls -la</code> or <code class="bg-[#0a0a0a] px-1 py-0.5 rounded">pip install requests</code></li>
+          <li>Chat history is saved per workspace in memory.json</li>
+        </ul>
+      </div>
+    `;
+  chatMessages.appendChild(div);
 }
 
 function addMessage(role, content, isTool = false) {
@@ -272,8 +311,44 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 function formatContent(text) {
-  // Simple markdown-ish
-  return escapeHtml(text).replace(/```([\\s\\S]*?)```/g, '<pre class=\"bg-[#0a0a0a] p-2 rounded mt-2 mono text-xs overflow-auto\">$1</pre>').replace(/`([^`]+)`/g, '<code class=\"bg-[#0a0a0a] px-1 py-0.5 rounded text-xs mono\">$1</code>').replace(/\\n/g, '<br>');
+  if(!text) return '<span class="text-gray-500">No content</span>';
+  return escapeHtml(text)
+    .replace(/```([\s\S]*?)```/g, '<pre class="bg-[#0a0a0a] p-2 rounded mt-2 mono text-xs overflow-auto">$1</pre>')
+    .replace(/`([^`]+)`/g, '<code class="bg-[#0a0a0a] px-1 py-0.5 rounded text-xs mono">$1</code>')
+    .replace(/\n/g, '<br>');
+}
+
+async function loadChatHistory(chatId) {
+  clearChatUI();
+  if(!kaggleUrl) {
+    addWelcomeMessage();
+    return;
+  }
+  try {
+    const res = await fetch(`${kaggleUrl}/workspaces/${chatId}/history`);
+    const data = await res.json();
+    if(data.success && data.messages && data.messages.length > 0) {
+      data.messages.forEach(msg => {
+        if(msg.role === 'user') {
+          addMessage('user', msg.content);
+        } else if(msg.role === 'assistant') {
+          addMessage('assistant', msg.content || 'Tool execution');
+          if(msg.tool_results) {
+            msg.tool_results.forEach(tr => {
+              const resultStr = typeof tr.result === 'object' ? JSON.stringify(tr.result).slice(0,800) : String(tr.result).slice(0,800);
+              addMessage('assistant', `🔧 ${tr.tool}: ${resultStr}`, true);
+            });
+          }
+        }
+      });
+    } else {
+      addWelcomeMessage();
+    }
+  } catch(e) {
+    console.log('Failed to load history', e);
+    addWelcomeMessage();
+  }
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 async function sendMessage() {
@@ -284,7 +359,7 @@ async function sendMessage() {
   chatInput.value = '';
   chatInput.style.height = '44px';
 
-  // Try Kaggle backend first, fallback to OpenRouter direct
+  // Try Kaggle backend first
   if(kaggleUrl) {
     try {
       const res = await fetch(kaggleUrl + '/chat', {
@@ -297,23 +372,28 @@ async function sendMessage() {
         addMessage('assistant', data.content);
         if(data.tool_results && data.tool_results.length > 0) {
           data.tool_results.forEach(tr => {
-            addMessage('assistant', `🔧 ${tr.tool}: ${JSON.stringify(tr.result).slice(0,500)}`, true);
+            const resultStr = typeof tr.result === 'object' ? JSON.stringify(tr.result).slice(0,800) : String(tr.result).slice(0,800);
+            addMessage('assistant', `🔧 ${tr.tool}: ${resultStr}`, true);
           });
         }
-        // Notify via ntfy
         if(ntfyTopic) {
           fetch(`https://ntfy.sh/${ntfyTopic}`, {method: 'POST', body: `New reply in ${currentWorkspace}: ${data.content.slice(0,100)}`, headers: {'Title': 'KaggleOS Reply'}}).catch(()=>{});
         }
         refreshFiles();
         refreshTasks();
+        refreshWorkspaces();
+        return;
+      } else {
+        addMessage('assistant', `❌ Backend error: ${data.error || JSON.stringify(data).slice(0,500)}`);
         return;
       }
     } catch(e) {
-      console.log('Kaggle backend failed, fallback to direct OpenRouter', e);
+      console.log('Kaggle backend failed', e);
+      addMessage('assistant', `⚠️ Kaggle backend unreachable: ${e.message}. Trying direct OpenRouter...`);
     }
   }
 
-  // Fallback: Direct OpenRouter call (if key available)
+  // Fallback: Direct OpenRouter
   if(!openrouterKey) {
     const saved = localStorage.getItem('openrouterKey');
     if(saved) openrouterKey = saved;
@@ -325,16 +405,20 @@ async function sendMessage() {
         headers: {
           'Authorization': 'Bearer ' + openrouterKey,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://amaankhan231.github.io',
+          'HTTP-Referer': 'https://lalibano.github.io',
           'X-Title': 'KaggleOS'
         },
         body: JSON.stringify({
           model: modelType === 'coding' ? 'anthropic/claude-3.5-sonnet' : modelType === 'fast' ? 'openai/gpt-4o-mini' : 'openai/gpt-4o-mini',
-          messages: [{role: 'system', content: 'You are KaggleOS, based AI agent with terminal access. Workspaces per chat, parallel tasks, ntfy notifications. Be concise.'}, {role: 'user', content: message}]
+          messages: [{role: 'system', content: 'You are KaggleOS, based AI agent with terminal access, internet via web_fetch, workspaces per chat. Be concise.'}, {role: 'user', content: message}]
         })
       });
       const data = await res.json();
-      addMessage('assistant', data.choices[0].message.content);
+      if(data.choices) {
+        addMessage('assistant', data.choices[0].message.content);
+      } else {
+        addMessage('assistant', `OpenRouter error: ${JSON.stringify(data).slice(0,500)}`);
+      }
     } catch(e) {
       addMessage('assistant', '❌ No Kaggle backend and OpenRouter failed. Set Kaggle URL or OpenRouter key in settings. Error: ' + e.message);
     }
@@ -346,7 +430,7 @@ async function sendMessage() {
 // Workspaces
 async function refreshWorkspaces() {
   if(!kaggleUrl) {
-    workspaceList.innerHTML = '<div class=\"text-xs text-gray-500 p-3 text-center\">Start Kaggle kernel to see workspaces</div>';
+    workspaceList.innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">Start Kaggle kernel to see workspaces</div>';
     return;
   }
   try {
@@ -354,15 +438,26 @@ async function refreshWorkspaces() {
     const data = await res.json();
     workspaces = data;
     workspaceList.innerHTML = '';
+    if(data.length === 0) {
+      workspaceList.innerHTML = '<div class="text-xs text-gray-500 p-3 text-center">No workspaces yet - create one</div>';
+      return;
+    }
     data.forEach(ws => {
       const div = document.createElement('div');
       div.className = `p-2.5 rounded-lg cursor-pointer hover:bg-[#1a1a1a] ${ws.chat_id === currentWorkspace ? 'bg-[#1a1a1a] border border-gray-700' : ''}`;
-      div.innerHTML = `<div class=\"flex items-center justify-between\"><span class=\"text-xs font-medium truncate\">${ws.chat_id}</span><span class=\"text-[10px] text-gray-500\">${ws.file_count || 0} files</span></div><div class=\"text-[10px] text-gray-500 truncate\">${ws.created_at ? new Date(ws.created_at).toLocaleDateString() : ''}</div>`;
-      div.onclick = () => { currentWorkspace = ws.chat_id; currentWorkspaceEl.textContent = ws.chat_id; refreshWorkspaces(); refreshFiles(); };
+      div.innerHTML = `<div class="flex items-center justify-between"><span class="text-xs font-medium truncate">${ws.chat_id}</span><span class="text-[10px] text-gray-500">${ws.file_count || 0} files</span></div><div class="text-[10px] text-gray-500 truncate">${ws.message_count || 0} msgs • ${ws.created_at ? new Date(ws.created_at).toLocaleDateString() : ''}</div>`;
+      div.onclick = () => {
+        currentWorkspace = ws.chat_id;
+        localStorage.setItem('currentWorkspace', currentWorkspace);
+        currentWorkspaceEl.textContent = ws.chat_id;
+        refreshWorkspaces();
+        loadChatHistory(ws.chat_id);
+        refreshFiles();
+      };
       workspaceList.appendChild(div);
     });
   } catch(e) {
-    workspaceList.innerHTML = `<div class=\"text-xs text-red-400 p-2\">Error: ${e.message}</div>`;
+    workspaceList.innerHTML = `<div class="text-xs text-red-400 p-2">Error: ${e.message}</div>`;
   }
 }
 
@@ -377,23 +472,29 @@ async function refreshFiles() {
       if(path !== '.') {
         const up = document.createElement('div');
         up.className = 'p-1.5 hover:bg-[#1a1a1a] rounded cursor-pointer flex items-center gap-2';
-        up.innerHTML = '<i class=\"fas fa-level-up-alt text-gray-500\"></i> ..';
+        up.innerHTML = '<i class="fas fa-level-up-alt text-gray-500"></i> ..';
         up.onclick = () => { document.getElementById('file-path').value = path.split('/').slice(0,-1).join('/') || '.'; refreshFiles(); };
         fileList.appendChild(up);
+      }
+      if(data.items.length === 0) {
+        fileList.innerHTML += '<div class="text-gray-500 p-3 text-center text-xs">Empty folder</div>';
       }
       data.items.forEach(item => {
         const div = document.createElement('div');
         div.className = 'p-1.5 hover:bg-[#1a1a1a] rounded cursor-pointer flex items-center gap-2 text-xs';
-        div.innerHTML = `<i class=\"fas ${item.is_dir ? 'fa-folder text-yellow-500' : 'fa-file text-gray-400'}\"></i><span class=\"truncate\">${item.name}</span><span class=\"ml-auto text-[10px] text-gray-500\">${item.is_dir ? '' : (item.size/1024).toFixed(1)+'KB'}</span>`;
+        div.innerHTML = `<i class="fas ${item.is_dir ? 'fa-folder text-yellow-500' : 'fa-file text-gray-400'}"></i><span class="truncate">${item.name}</span><span class="ml-auto text-[10px] text-gray-500">${item.is_dir ? '' : (item.size/1024).toFixed(1)+'KB'}</span>`;
         div.onclick = () => {
           if(item.is_dir) {
             document.getElementById('file-path').value = item.path;
             refreshFiles();
           } else {
-            fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/files?path=${encodeURIComponent(item.path)}`).then(r=>r.json()).then(d=>{
-              // Actually need file_read endpoint, but for demo use direct
-              // We'll fetch via shell cat
-              fetch(kaggleUrl + '/shell', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: currentWorkspace, cmd: `cat \"${item.path}\" | head -n 100`})}).then(r=>r.json()).then(res=>{
+            // Use new file read endpoint
+            fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/file/read?file_path=${encodeURIComponent(item.path)}`).then(r=>r.json()).then(d=>{
+              document.getElementById('file-preview').classList.remove('hidden');
+              document.getElementById('file-content').textContent = d.content || d.error || 'No content';
+            }).catch(()=>{
+              // Fallback via shell
+              fetch(kaggleUrl + '/shell', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: currentWorkspace, cmd: `cat "${item.path}" | head -n 200`})}).then(r=>r.json()).then(res=>{
                 document.getElementById('file-preview').classList.remove('hidden');
                 document.getElementById('file-content').textContent = res.stdout || res.stderr || 'No content';
               });
@@ -404,7 +505,7 @@ async function refreshFiles() {
       });
     }
   } catch(e) {
-    fileList.innerHTML = `<div class=\"text-xs text-red-400 p-2\">${e.message}</div>`;
+    fileList.innerHTML = `<div class="text-xs text-red-400 p-2">${e.message}</div>`;
   }
 }
 
@@ -414,7 +515,7 @@ async function refreshTasks() {
     const res = await fetch(kaggleUrl + '/tasks?chat_id=' + currentWorkspace);
     const data = await res.json();
     if(data.length === 0) {
-      tasksList.innerHTML = '<div class=\"text-gray-500 p-3 text-center text-xs\">No tasks</div>';
+      tasksList.innerHTML = '<div class="text-gray-500 p-3 text-center text-xs">No tasks</div>';
       return;
     }
     tasksList.innerHTML = '';
@@ -422,11 +523,11 @@ async function refreshTasks() {
       const div = document.createElement('div');
       div.className = 'bg-[#1a1a1a] rounded-lg p-2.5';
       const statusColor = task.status === 'running' ? 'text-green-400 task-running' : task.status === 'completed' ? 'text-blue-400' : 'text-red-400';
-      div.innerHTML = `<div class=\"flex justify-between items-center\"><span class=\"text-xs font-medium truncate\">${task.name}</span><span class=\"text-[10px] ${statusColor}\">${task.status}</span></div><div class=\"text-[10px] text-gray-500 mt-1\">${task.task_id} • ${new Date(task.created_at).toLocaleTimeString()}</div>${task.result ? `<div class=\"text-[10px] mono bg-[#0a0a0a] p-1.5 rounded mt-1 truncate\">${task.result.slice(0,100)}</div>` : ''}`;
+      div.innerHTML = `<div class="flex justify-between items-center"><span class="text-xs font-medium truncate">${task.name}</span><span class="text-[10px] ${statusColor}">${task.status}</span></div><div class="text-[10px] text-gray-500 mt-1">${task.task_id} • ${new Date(task.created_at).toLocaleTimeString()}</div>${task.result ? `<div class="text-[10px] mono bg-[#0a0a0a] p-1.5 rounded mt-1 truncate">${escapeHtml(task.result.slice(0,100))}</div>` : ''}`;
       tasksList.appendChild(div);
     });
   } catch(e) {
-    tasksList.innerHTML = `<div class=\"text-xs text-red-400 p-2\">${e.message}</div>`;
+    tasksList.innerHTML = `<div class="text-xs text-red-400 p-2">${e.message}</div>`;
   }
 }
 
@@ -437,20 +538,44 @@ chatInput.addEventListener('keydown', (e) => {
     e.preventDefault();
     sendMessage();
   }
-  // Auto-resize
   chatInput.style.height = '44px';
   chatInput.style.height = Math.min(chatInput.scrollHeight, 128) + 'px';
 });
+
 document.getElementById('new-chat-btn').onclick = async () => {
   const newId = 'chat_' + Math.random().toString(36).substring(2,8);
-  if(kaggleUrl) {
-    await fetch(kaggleUrl + '/workspaces', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: newId})});
-  }
+  // Clear UI immediately
   currentWorkspace = newId;
+  localStorage.setItem('currentWorkspace', currentWorkspace);
   currentWorkspaceEl.textContent = newId;
-  refreshWorkspaces();
-  addMessage('assistant', `Created new workspace: ${newId}`);
+  clearChatUI();
+  addWelcomeMessage();
+  addMessage('assistant', `✅ Created new workspace: ${newId}. This chat is now isolated. Previous chats are saved.`);
+  
+  if(kaggleUrl) {
+    try {
+      await fetch(kaggleUrl + '/workspaces', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: newId})});
+      refreshWorkspaces();
+    } catch(e) {
+      console.log('Failed to create workspace on backend', e);
+    }
+  } else {
+    refreshWorkspaces();
+  }
+  refreshFiles();
 };
+
+document.getElementById('clear-chat').onclick = () => {
+  if(confirm(`Clear chat UI for ${currentWorkspace}? (History still saved on backend)`)) {
+    clearChatUI();
+    addWelcomeMessage();
+  }
+};
+
+document.getElementById('reload-history').onclick = () => {
+  loadChatHistory(currentWorkspace);
+};
+
 document.getElementById('refresh-files').onclick = refreshFiles;
 document.getElementById('refresh-tasks').onclick = refreshTasks;
 document.getElementById('terminal-run').onclick = async () => {
@@ -464,7 +589,7 @@ document.getElementById('terminal-run').onclick = async () => {
   try {
     const res = await fetch(kaggleUrl + '/shell', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: currentWorkspace, cmd})});
     const data = await res.json();
-    terminalOutput.textContent = `$ ${cmd}\n${data.stdout || ''}${data.stderr ? '\\nERR: '+data.stderr : ''}\\n\\nExit: ${data.returncode}`;
+    terminalOutput.textContent = `$ ${cmd}\n${data.stdout || ''}${data.stderr ? '\nERR: '+data.stderr : ''}\n\nExit: ${data.returncode}`;
   } catch(e) {
     terminalOutput.textContent = `Error: ${e.message}`;
   }
@@ -498,10 +623,11 @@ document.getElementById('settings-save').onclick = () => {
   document.getElementById('settings-modal').classList.add('hidden');
   checkKaggleStatus();
   refreshWorkspaces();
+  loadChatHistory(currentWorkspace);
 };
 
 document.getElementById('ntfy-topic').addEventListener('change', (e) => { localStorage.setItem('ntfyTopic', e.target.value); ntfyTopic = e.target.value; });
-document.getElementById('kaggle-url').addEventListener('change', (e) => { localStorage.setItem('kaggleUrl', e.target.value); kaggleUrl = e.target.value; checkKaggleStatus(); });
+document.getElementById('kaggle-url').addEventListener('change', (e) => { localStorage.setItem('kaggleUrl', e.target.value); kaggleUrl = e.target.value; checkKaggleStatus(); refreshWorkspaces(); loadChatHistory(currentWorkspace); });
 
 // Auto-refresh
 setInterval(() => { if(kaggleUrl) { checkKaggleStatus(); refreshTasks(); } }, 10000);
