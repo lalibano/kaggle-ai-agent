@@ -1,15 +1,13 @@
 {
-  "kaggle_url": "https://divisions-submitting-falls-essays.trycloudflare.com",
-  "kaggle_notebook_url": "https://www.kaggle.com/code/amaankhan231/kaggleos-ai-agent-v4-fixed-chat-history",
-  "cloudflare_url": "https://divisions-submitting-falls-essays.trycloudflare.com",
+  "kaggle_url": "https://tray-counseling-hampshire-gotta.trycloudflare.com",
+  "kaggle_notebook_url": "https://www.kaggle.com/code/amaankhan231/kaggleos-agent-v5-autonomous",
+  "cloudflare_url": "https://tray-counseling-hampshire-gotta.trycloudflare.com",
   "ntfy_topic": "kaggle-agent-amaankhan231",
   "fixed_website": "https://lalibano.github.io/kaggle-ai-agent/",
   "github_repo": "https://github.com/lalibano/kaggle-ai-agent",
-  "version": "2.6",
-  "last_updated": "2026-09-15T13:50:00Z",
+  "version": "2.7",
+  "last_updated": "2026-09-15T14:45:00Z",
   "status": "running",
-  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "ntfy_gmail_notifications", "permission_guard", "cloudflare_tunnel", "keep_alive", "chat_history_persist", "internet_web_fetch", "ssl_fix", "natural_answer", "composio_path_fix"],
-  "fixes": {
-    "composio_login": "FIXED - shell_exec now includes ~/.local/bin in PATH, handles composio login --no-wait to give auth link, tries full paths"
-  }
+  "features": ["terminal", "workspaces_per_chat", "parallel_tasks", "background_run", "autonomous_agent", "chat_history_persist", "internet_web_fetch", "ssl_fix", "natural_answer", "composio_path_fix"],
+  "agent_mode": "Autonomous - breaks goals into steps, executes 2-4 tools per response, uses background_run for heavy tasks, parallel execution up to 4 workers"
 }
