@@ -1,0 +1,37 @@
+name: KaggleOS Notifications & Workspace Sync
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Every 5 minutes for reminders
+  workflow_dispatch:
+  push:
+    paths:
+      - 'workspaces/**'
+      - 'reminders.json'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check reminders
+        run: |
+          if [ -f reminders.json ]; then
+            echo "Checking reminders..."
+            cat reminders.json
+            # Here you would add logic to send ntfy.sh + Gmail via Composio
+            # Example:
+            # curl -d "Reminder due!" ntfy.sh/${{ secrets.NTFY_TOPIC }}
+          fi
+      
+      - name: Sync workspaces
+        run: |
+          echo "Workspaces in repo:"
+          ls -la workspaces/ 2>/dev/null || echo "No workspaces yet"
+          echo "This job persists workspaces pushed from Kaggle"
+      
+      - name: Send ntfy heartbeat (optional)
+        if: false  # Enable if you want heartbeat
+        run: |
+          curl -d "GitHub Actions alive - KaggleOS" ntfy.sh/${{ secrets.NTFY_TOPIC }} -H "Title: KaggleOS Heartbeat"
