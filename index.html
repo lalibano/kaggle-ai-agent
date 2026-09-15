@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KaggleOS - AI Agent</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+body { font-family: 'Inter', sans-serif; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+.chat-bubble { max-width: 85%; word-wrap: break-word; }
+.task-running { animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+</style>
+</head>
+<body class="bg-[#0a0a0a] text-gray-100 h-screen flex flex-col overflow-hidden">
+<!-- Header -->
+<header class="bg-[#111111] border-b border-gray-800 px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center">
+<i class="fas fa-robot text-white text-sm"></i>
+</div>
+<div>
+<h1 class="font-bold text-sm">KaggleOS</h1>
+<p class="text-[11px] text-gray-400 -mt-1">AI Agent • Terminal • Workspaces</p>
+</div>
+<div id="status-dot" class="w-2 h-2 bg-gray-500 rounded-full ml-3"></div>
+<span id="status-text" class="text-xs text-gray-400">Offline</span>
+</div>
+<div class="flex items-center gap-2">
+<button id="settings-btn" class="p-2 hover:bg-gray-800 rounded-lg"><i class="fas fa-cog text-gray-400 text-sm"></i></button>
+<a href="https://github.com" target="_blank" class="p-2 hover:bg-gray-800 rounded-lg"><i class="fab fa-github text-gray-400 text-sm"></i></a>
+</div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar - Workspaces -->
+<div class="w-64 bg-[#111111] border-r border-gray-800 flex flex-col">
+<div class="p-3 border-b border-gray-800">
+<button id="new-chat-btn" class="w-full bg-white text-black text-sm font-medium py-2 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2">
+<i class="fas fa-plus text-xs"></i> New Workspace
+</button>
+</div>
+<div class="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1" id="workspace-list">
+<!-- Workspaces will be listed here -->
+<div class="text-xs text-gray-500 p-3 text-center">No workspaces yet</div>
+</div>
+<div class="p-3 border-t border-gray-800 space-y-2">
+<div class="bg-[#1a1a1a] rounded-lg p-2">
+<p class="text-[11px] text-gray-400 mb-1">NTFY Topic</p>
+<input id="ntfy-topic" type="text" placeholder="kaggle-agent-amaankhan231" class="w-full bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 text-xs mono">
+</div>
+<div class="bg-[#1a1a1a] rounded-lg p-2">
+<p class="text-[11px] text-gray-400 mb-1">Kaggle API URL</p>
+<input id="kaggle-url" type="text" placeholder="https://xxx.trycloudflare.com" class="w-full bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 text-xs mono">
+<p class="text-[10px] text-gray-500 mt-1">Auto-updated when Kaggle runs</p>
+</div>
+</div>
+</div>
+
+<!-- Main - Chat -->
+<div class="flex-1 flex flex-col bg-[#0a0a0a]">
+<!-- Chat Header -->
+<div class="px-4 py-2 border-b border-gray-800 flex items-center justify-between bg-[#111111]">
+<div class="flex items-center gap-2">
+<i class="fas fa-comments text-gray-400 text-xs"></i>
+<span id="current-workspace" class="text-sm font-medium">default</span>
+<span class="text-xs text-gray-500">•</span>
+<select id="model-select" class="bg-[#1a1a1a] border border-gray-700 rounded px-2 py-1 text-xs">
+<option value="auto">Auto Router</option>
+<option value="coding">Claude 3.5 Sonnet (Coding)</option>
+<option value="fast">GPT-4o-mini (Fast)</option>
+<option value="general">GPT-4o (General)</option>
+<option value="cheap">Llama 3.3 (Cheap)</option>
+</select>
+</div>
+<div class="flex gap-2">
+<button id="clear-chat" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800">Clear</button>
+</div>
+</div>
+
+<!-- Messages -->
+<div id="chat-messages" class="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-3">
+<div class="flex gap-3">
+<div class="w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-xs"></i></div>
+<div class="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble">
+<p class="text-sm">👋 I'm <b>KaggleOS</b> — your autonomous AI agent running on Kaggle.</p>
+<p class="text-xs text-gray-400 mt-2">I have:</p>
+<ul class="text-xs text-gray-300 list-disc ml-4 mt-1 space-y-0.5">
+<li>Terminal access (install OK, delete needs confirm)</li>
+<li>File management per workspace</li>
+<li>Parallel background tasks</li>
+<li>Notifications via ntfy.sh + Gmail</li>
+<li>Workspaces persist to GitHub</li>
+</ul>
+<p class="text-xs text-gray-400 mt-3">Try: <code class="bg-[#0a0a0a] px-1.5 py-0.5 rounded text-xs">ls -la</code> or <code class="bg-[#0a0a0a] px-1.5 py-0.5 rounded">train a model on titanic</code></p>
+</div>
+</div>
+</div>
+
+<!-- Input -->
+<div class="p-3 border-t border-gray-800 bg-[#111111]">
+<div class="flex gap-2">
+<textarea id="chat-input" placeholder="Ask agent to do anything... (Shift+Enter for new line)" class="flex-1 bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:border-violet-500 min-h-[44px] max-h-32" rows="1"></textarea>
+<button id="send-btn" class="bg-white text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 flex items-center gap-2">
+<i class="fas fa-paper-plane text-xs"></i> Send
+</button>
+</div>
+<p class="text-[10px] text-gray-500 mt-2 px-1">Enter to send • Shift+Enter new line • Agent can run multiple tasks in parallel</p>
+</div>
+</div>
+
+<!-- Right Panel - Files, Terminal, Tasks -->
+<div class="w-80 bg-[#111111] border-l border-gray-800 flex flex-col">
+<!-- Tabs -->
+<div class="flex border-b border-gray-800">
+<button data-tab="files" class="tab-btn flex-1 py-2.5 text-xs font-medium border-b-2 border-white">Files</button>
+<button data-tab="terminal" class="tab-btn flex-1 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-400">Terminal</button>
+<button data-tab="tasks" class="tab-btn flex-1 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-400">Tasks</button>
+</div>
+
+<!-- Files Tab -->
+<div id="tab-files" class="tab-content flex-1 flex flex-col overflow-hidden">
+<div class="p-2 flex gap-1">
+<button id="refresh-files" class="p-1.5 hover:bg-gray-800 rounded text-xs"><i class="fas fa-sync"></i></button>
+<button id="new-file" class="p-1.5 hover:bg-gray-800 rounded text-xs"><i class="fas fa-file-circle-plus"></i></button>
+<input id="file-path" type="text" value="." class="flex-1 bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 text-xs mono ml-1">
+</div>
+<div id="file-list" class="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-0.5 text-xs">
+<div class="text-gray-500 p-3 text-center text-xs">Select workspace to see files</div>
+</div>
+<div id="file-preview" class="h-48 border-t border-gray-800 bg-[#0a0a0a] p-2 overflow-auto scrollbar-thin hidden">
+<pre id="file-content" class="text-[11px] mono whitespace-pre-wrap"></pre>
+</div>
+</div>
+
+<!-- Terminal Tab -->
+<div id="tab-terminal" class="tab-content flex-1 flex flex-col overflow-hidden hidden">
+<div class="p-2 flex gap-1">
+<input id="terminal-input" type="text" placeholder="ls -la, pip install, python script.py..." class="flex-1 bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1.5 text-xs mono">
+<button id="terminal-run" class="bg-[#1a1a1a] hover:bg-gray-800 px-3 py-1 rounded text-xs">Run</button>
+</div>
+<div id="terminal-output" class="flex-1 bg-[#0a0a0a] m-2 rounded-lg p-3 overflow-auto scrollbar-thin mono text-[11px] whitespace-pre-wrap">
+<span class="text-gray-500">Terminal ready. Install doesn't need permission, delete needs confirm.</span>
+</div>
+</div>
+
+<!-- Tasks Tab -->
+<div id="tab-tasks" class="tab-content flex-1 flex flex-col overflow-hidden hidden">
+<div class="p-2 flex justify-between items-center">
+<span class="text-xs font-medium">Parallel Tasks</span>
+<button id="refresh-tasks" class="p-1 hover:bg-gray-800 rounded text-xs"><i class="fas fa-sync"></i></button>
+</div>
+<div id="tasks-list" class="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-2">
+<div class="text-gray-500 p-3 text-center text-xs">No tasks running</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
+<div class="bg-[#111111] border border-gray-800 rounded-xl w-[500px] max-w-[90vw] p-5">
+<h3 class="font-bold mb-4">Settings</h3>
+<div class="space-y-3">
+<div>
+<label class="text-xs text-gray-400">OpenRouter API Key (stored in localStorage, never sent to GitHub)</label>
+<input id="openrouter-key" type="password" placeholder="sk-or-v1-..." class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
+</div>
+<div>
+<label class="text-xs text-gray-400">NTFY Topic (for push notifications)</label>
+<input id="settings-ntfy" type="text" placeholder="kaggle-agent-amaankhan231" class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
+<p class="text-[10px] text-gray-500 mt-1">Install ntfy app on phone and subscribe to this topic</p>
+</div>
+<div>
+<label class="text-xs text-gray-400">Gmail for notifications (optional)</label>
+<input id="settings-gmail" type="email" placeholder="you@gmail.com" class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
+</div>
+<div>
+<label class="text-xs text-gray-400">Kaggle API URL (auto-updated)</label>
+<input id="settings-kaggle-url" type="text" placeholder="https://xxx.trycloudflare.com" class="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-xs mono mt-1">
+</div>
+</div>
+<div class="flex justify-end gap-2 mt-5">
+<button id="settings-cancel" class="px-4 py-2 text-xs bg-[#1a1a1a] rounded-lg hover:bg-gray-800">Cancel</button>
+<button id="settings-save" class="px-4 py-2 text-xs bg-white text-black rounded-lg hover:bg-gray-200 font-medium">Save</button>
+</div>
+</div>
+</div>
+
+<script>
+// State
+let currentWorkspace = 'default';
+let kaggleUrl = localStorage.getItem('kaggleUrl') || '';
+let ntfyTopic = localStorage.getItem('ntfyTopic') || 'kaggle-agent-amaankhan231';
+let openrouterKey = localStorage.getItem('openrouterKey') || '';
+let workspaces = [];
+
+// DOM
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const sendBtn = document.getElementById('send-btn');
+const workspaceList = document.getElementById('workspace-list');
+const currentWorkspaceEl = document.getElementById('current-workspace');
+const fileList = document.getElementById('file-list');
+const terminalOutput = document.getElementById('terminal-output');
+const tasksList = document.getElementById('tasks-list');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+
+// Init
+document.getElementById('kaggle-url').value = kaggleUrl;
+document.getElementById('ntfy-topic').value = ntfyTopic;
+document.getElementById('openrouter-key').value = openrouterKey ? '••••••••' + openrouterKey.slice(-10) : '';
+document.getElementById('settings-ntfy').value = ntfyTopic;
+document.getElementById('settings-kaggle-url').value = kaggleUrl;
+checkKaggleStatus();
+
+// Load config.json for auto tunnel URL (GitHub Pages deployment will update this)
+fetch('config.json').then(r => r.json()).then(cfg => {
+  if(cfg.kaggle_url && cfg.kaggle_url !== kaggleUrl) {
+    kaggleUrl = cfg.kaggle_url;
+    localStorage.setItem('kaggleUrl', kaggleUrl);
+    document.getElementById('kaggle-url').value = kaggleUrl;
+    document.getElementById('settings-kaggle-url').value = kaggleUrl;
+    checkKaggleStatus();
+  }
+}).catch(() => {});
+
+function checkKaggleStatus() {
+  if(!kaggleUrl) {
+    statusDot.className = 'w-2 h-2 bg-gray-500 rounded-full ml-3';
+    statusText.textContent = 'Offline - Start Kaggle kernel';
+    return;
+  }
+  fetch(kaggleUrl + '/', {mode: 'cors'}).then(r => r.json()).then(data => {
+    statusDot.className = 'w-2 h-2 bg-green-500 rounded-full ml-3';
+    statusText.textContent = `Online • ${data.workspaces || 0} ws • ${data.tasks || 0} tasks`;
+  }).catch(() => {
+    statusDot.className = 'w-2 h-2 bg-yellow-500 rounded-full ml-3';
+    statusText.textContent = 'Kaggle URL set but unreachable';
+  });
+}
+
+function addMessage(role, content, isTool = false) {
+  const div = document.createElement('div');
+  div.className = 'flex gap-3';
+  if(role === 'user') {
+    div.innerHTML = `
+      <div class="w-7 h-7 bg-[#1a1a1a] rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-user text-xs"></i></div>
+      <div class="bg-white text-black rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble"><p class="text-sm">${escapeHtml(content)}</p></div>
+    `;
+  } else {
+    div.innerHTML = `
+      <div class="w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-xs"></i></div>
+      <div class="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-2.5 chat-bubble ${isTool ? 'border border-violet-500/30' : ''}">
+        <div class="text-sm whitespace-pre-wrap">${formatContent(content)}</div>
+      </div>
+    `;
+  }
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+function formatContent(text) {
+  // Simple markdown-ish
+  return escapeHtml(text).replace(/```([\\s\\S]*?)```/g, '<pre class=\"bg-[#0a0a0a] p-2 rounded mt-2 mono text-xs overflow-auto\">$1</pre>').replace(/`([^`]+)`/g, '<code class=\"bg-[#0a0a0a] px-1 py-0.5 rounded text-xs mono\">$1</code>').replace(/\\n/g, '<br>');
+}
+
+async function sendMessage() {
+  const message = chatInput.value.trim();
+  if(!message) return;
+  const modelType = document.getElementById('model-select').value;
+  addMessage('user', message);
+  chatInput.value = '';
+  chatInput.style.height = '44px';
+
+  // Try Kaggle backend first, fallback to OpenRouter direct
+  if(kaggleUrl) {
+    try {
+      const res = await fetch(kaggleUrl + '/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({chat_id: currentWorkspace, message, model_type: modelType})
+      });
+      const data = await res.json();
+      if(data.success) {
+        addMessage('assistant', data.content);
+        if(data.tool_results && data.tool_results.length > 0) {
+          data.tool_results.forEach(tr => {
+            addMessage('assistant', `🔧 ${tr.tool}: ${JSON.stringify(tr.result).slice(0,500)}`, true);
+          });
+        }
+        // Notify via ntfy
+        if(ntfyTopic) {
+          fetch(`https://ntfy.sh/${ntfyTopic}`, {method: 'POST', body: `New reply in ${currentWorkspace}: ${data.content.slice(0,100)}`, headers: {'Title': 'KaggleOS Reply'}}).catch(()=>{});
+        }
+        refreshFiles();
+        refreshTasks();
+        return;
+      }
+    } catch(e) {
+      console.log('Kaggle backend failed, fallback to direct OpenRouter', e);
+    }
+  }
+
+  // Fallback: Direct OpenRouter call (if key available)
+  if(!openrouterKey) {
+    const saved = localStorage.getItem('openrouterKey');
+    if(saved) openrouterKey = saved;
+  }
+  if(openrouterKey) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + openrouterKey,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://amaankhan231.github.io',
+          'X-Title': 'KaggleOS'
+        },
+        body: JSON.stringify({
+          model: modelType === 'coding' ? 'anthropic/claude-3.5-sonnet' : modelType === 'fast' ? 'openai/gpt-4o-mini' : 'openai/gpt-4o-mini',
+          messages: [{role: 'system', content: 'You are KaggleOS, based AI agent with terminal access. Workspaces per chat, parallel tasks, ntfy notifications. Be concise.'}, {role: 'user', content: message}]
+        })
+      });
+      const data = await res.json();
+      addMessage('assistant', data.choices[0].message.content);
+    } catch(e) {
+      addMessage('assistant', '❌ No Kaggle backend and OpenRouter failed. Set Kaggle URL or OpenRouter key in settings. Error: ' + e.message);
+    }
+  } else {
+    addMessage('assistant', '⚠️ Set Kaggle API URL (when notebook running) or OpenRouter API key in settings (top right gear).');
+  }
+}
+
+// Workspaces
+async function refreshWorkspaces() {
+  if(!kaggleUrl) {
+    workspaceList.innerHTML = '<div class=\"text-xs text-gray-500 p-3 text-center\">Start Kaggle kernel to see workspaces</div>';
+    return;
+  }
+  try {
+    const res = await fetch(kaggleUrl + '/workspaces');
+    const data = await res.json();
+    workspaces = data;
+    workspaceList.innerHTML = '';
+    data.forEach(ws => {
+      const div = document.createElement('div');
+      div.className = `p-2.5 rounded-lg cursor-pointer hover:bg-[#1a1a1a] ${ws.chat_id === currentWorkspace ? 'bg-[#1a1a1a] border border-gray-700' : ''}`;
+      div.innerHTML = `<div class=\"flex items-center justify-between\"><span class=\"text-xs font-medium truncate\">${ws.chat_id}</span><span class=\"text-[10px] text-gray-500\">${ws.file_count || 0} files</span></div><div class=\"text-[10px] text-gray-500 truncate\">${ws.created_at ? new Date(ws.created_at).toLocaleDateString() : ''}</div>`;
+      div.onclick = () => { currentWorkspace = ws.chat_id; currentWorkspaceEl.textContent = ws.chat_id; refreshWorkspaces(); refreshFiles(); };
+      workspaceList.appendChild(div);
+    });
+  } catch(e) {
+    workspaceList.innerHTML = `<div class=\"text-xs text-red-400 p-2\">Error: ${e.message}</div>`;
+  }
+}
+
+async function refreshFiles() {
+  if(!kaggleUrl) return;
+  const path = document.getElementById('file-path').value || '.';
+  try {
+    const res = await fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/files?path=${encodeURIComponent(path)}`);
+    const data = await res.json();
+    if(data.success) {
+      fileList.innerHTML = '';
+      if(path !== '.') {
+        const up = document.createElement('div');
+        up.className = 'p-1.5 hover:bg-[#1a1a1a] rounded cursor-pointer flex items-center gap-2';
+        up.innerHTML = '<i class=\"fas fa-level-up-alt text-gray-500\"></i> ..';
+        up.onclick = () => { document.getElementById('file-path').value = path.split('/').slice(0,-1).join('/') || '.'; refreshFiles(); };
+        fileList.appendChild(up);
+      }
+      data.items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-1.5 hover:bg-[#1a1a1a] rounded cursor-pointer flex items-center gap-2 text-xs';
+        div.innerHTML = `<i class=\"fas ${item.is_dir ? 'fa-folder text-yellow-500' : 'fa-file text-gray-400'}\"></i><span class=\"truncate\">${item.name}</span><span class=\"ml-auto text-[10px] text-gray-500\">${item.is_dir ? '' : (item.size/1024).toFixed(1)+'KB'}</span>`;
+        div.onclick = () => {
+          if(item.is_dir) {
+            document.getElementById('file-path').value = item.path;
+            refreshFiles();
+          } else {
+            fetch(`${kaggleUrl}/workspaces/${currentWorkspace}/files?path=${encodeURIComponent(item.path)}`).then(r=>r.json()).then(d=>{
+              // Actually need file_read endpoint, but for demo use direct
+              // We'll fetch via shell cat
+              fetch(kaggleUrl + '/shell', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: currentWorkspace, cmd: `cat \"${item.path}\" | head -n 100`})}).then(r=>r.json()).then(res=>{
+                document.getElementById('file-preview').classList.remove('hidden');
+                document.getElementById('file-content').textContent = res.stdout || res.stderr || 'No content';
+              });
+            });
+          }
+        };
+        fileList.appendChild(div);
+      });
+    }
+  } catch(e) {
+    fileList.innerHTML = `<div class=\"text-xs text-red-400 p-2\">${e.message}</div>`;
+  }
+}
+
+async function refreshTasks() {
+  if(!kaggleUrl) return;
+  try {
+    const res = await fetch(kaggleUrl + '/tasks?chat_id=' + currentWorkspace);
+    const data = await res.json();
+    if(data.length === 0) {
+      tasksList.innerHTML = '<div class=\"text-gray-500 p-3 text-center text-xs\">No tasks</div>';
+      return;
+    }
+    tasksList.innerHTML = '';
+    data.forEach(task => {
+      const div = document.createElement('div');
+      div.className = 'bg-[#1a1a1a] rounded-lg p-2.5';
+      const statusColor = task.status === 'running' ? 'text-green-400 task-running' : task.status === 'completed' ? 'text-blue-400' : 'text-red-400';
+      div.innerHTML = `<div class=\"flex justify-between items-center\"><span class=\"text-xs font-medium truncate\">${task.name}</span><span class=\"text-[10px] ${statusColor}\">${task.status}</span></div><div class=\"text-[10px] text-gray-500 mt-1\">${task.task_id} • ${new Date(task.created_at).toLocaleTimeString()}</div>${task.result ? `<div class=\"text-[10px] mono bg-[#0a0a0a] p-1.5 rounded mt-1 truncate\">${task.result.slice(0,100)}</div>` : ''}`;
+      tasksList.appendChild(div);
+    });
+  } catch(e) {
+    tasksList.innerHTML = `<div class=\"text-xs text-red-400 p-2\">${e.message}</div>`;
+  }
+}
+
+// Events
+sendBtn.onclick = sendMessage;
+chatInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+  // Auto-resize
+  chatInput.style.height = '44px';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 128) + 'px';
+});
+document.getElementById('new-chat-btn').onclick = async () => {
+  const newId = 'chat_' + Math.random().toString(36).substring(2,8);
+  if(kaggleUrl) {
+    await fetch(kaggleUrl + '/workspaces', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: newId})});
+  }
+  currentWorkspace = newId;
+  currentWorkspaceEl.textContent = newId;
+  refreshWorkspaces();
+  addMessage('assistant', `Created new workspace: ${newId}`);
+};
+document.getElementById('refresh-files').onclick = refreshFiles;
+document.getElementById('refresh-tasks').onclick = refreshTasks;
+document.getElementById('terminal-run').onclick = async () => {
+  const cmd = document.getElementById('terminal-input').value;
+  if(!cmd) return;
+  if(!kaggleUrl) {
+    terminalOutput.textContent = 'Set Kaggle API URL first';
+    return;
+  }
+  terminalOutput.textContent = `$ ${cmd}\nRunning...`;
+  try {
+    const res = await fetch(kaggleUrl + '/shell', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: currentWorkspace, cmd})});
+    const data = await res.json();
+    terminalOutput.textContent = `$ ${cmd}\n${data.stdout || ''}${data.stderr ? '\\nERR: '+data.stderr : ''}\\n\\nExit: ${data.returncode}`;
+  } catch(e) {
+    terminalOutput.textContent = `Error: ${e.message}`;
+  }
+};
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('border-white','text-white'); b.classList.add('border-transparent','text-gray-400'); });
+    btn.classList.add('border-white','text-white'); btn.classList.remove('border-transparent','text-gray-400');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+    if(btn.dataset.tab === 'files') refreshFiles();
+    if(btn.dataset.tab === 'tasks') refreshTasks();
+  };
+});
+
+// Settings
+document.getElementById('settings-btn').onclick = () => document.getElementById('settings-modal').classList.remove('hidden');
+document.getElementById('settings-modal').onclick = (e) => { if(e.target.id === 'settings-modal') e.currentTarget.classList.add('hidden'); };
+document.getElementById('settings-cancel').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
+document.getElementById('settings-save').onclick = () => {
+  const key = document.getElementById('openrouter-key').value;
+  const ntfy = document.getElementById('settings-ntfy').value;
+  const gmail = document.getElementById('settings-gmail').value;
+  const kurl = document.getElementById('settings-kaggle-url').value;
+  if(key && !key.startsWith('••••')) localStorage.setItem('openrouterKey', key);
+  if(ntfy) { localStorage.setItem('ntfyTopic', ntfy); ntfyTopic = ntfy; document.getElementById('ntfy-topic').value = ntfy; }
+  if(kurl) { localStorage.setItem('kaggleUrl', kurl); kaggleUrl = kurl; document.getElementById('kaggle-url').value = kurl; }
+  if(gmail) localStorage.setItem('gmail', gmail);
+  document.getElementById('settings-modal').classList.add('hidden');
+  checkKaggleStatus();
+  refreshWorkspaces();
+};
+
+document.getElementById('ntfy-topic').addEventListener('change', (e) => { localStorage.setItem('ntfyTopic', e.target.value); ntfyTopic = e.target.value; });
+document.getElementById('kaggle-url').addEventListener('change', (e) => { localStorage.setItem('kaggleUrl', e.target.value); kaggleUrl = e.target.value; checkKaggleStatus(); });
+
+// Auto-refresh
+setInterval(() => { if(kaggleUrl) { checkKaggleStatus(); refreshTasks(); } }, 10000);
+setTimeout(() => { refreshWorkspaces(); }, 1000);
+</script>
+</body>
+</html>
