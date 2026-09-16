@@ -354,14 +354,63 @@ async function send(){
         addMsg('assistant', d.content);
         if(d.tool_results) d.tool_results.forEach(tr=>{
           const s=typeof tr.result==='object'?JSON.stringify(tr.result).slice(0,500):String(tr.result).slice(0,500);
-          if(s.length>20) addMsg('assistant', `🔧 ${tr.tool}`, true);
+          if(s.length>20) addMsg('assistant', `🔧 ${tr.tool}: ${s.slice(0,200)}`, true);
         });
         refreshFiles(); refreshTasks(); refreshWorkspaces();
         sendBtn.disabled=false; return;
+      } else {
+        // Handle credit errors or model failures
+        const errStr = JSON.stringify(d).toLowerCase();
+        console.log('Chat failed:', d);
+        if(errStr.includes('credit') || errStr.includes('402') || d.status===402 || errStr.includes('max_tokens')){
+          addMsg('assistant', `⚠️ OpenRouter credits low (${d.status||'402'}). Trying direct terminal execution...`, true);
+          // Try direct shell for terminal-like commands
+          const lower = msg.toLowerCase();
+          if(lower.includes('ls') || lower.includes('pwd') || lower.includes('cat') || lower.includes('echo') || lower.includes('terminal') || lower.includes('run') || lower.includes('list') || lower.includes('ps') || lower.includes('df') || lower.match(/^[a-z0-9 _\-\.\/]+$/i)){
+            try{
+              // Extract command or use message as command if it looks like shell
+              let cmd = msg;
+              // Clean up natural language to shell
+              if(lower.startsWith('run ')) cmd = msg.slice(4);
+              if(lower.startsWith('execute ')) cmd = msg.slice(8);
+              if(lower.includes('list files')) cmd = 'ls -la';
+              if(lower.includes('current dir')) cmd = 'pwd && ls -la';
+              // Limit
+              cmd = cmd.slice(0,200);
+              const r2 = await fetch(kaggleUrl+'/shell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:currentWorkspace,cmd})});
+              const d2 = await r2.json();
+              addMsg('assistant', `⚡ Direct terminal (bypass LLM):\n$ ${cmd}\n${d2.stdout||''}${d2.stderr?'\nERR:'+d2.stderr:''}\nExit: ${d2.returncode}`);
+              refreshFiles();
+              sendBtn.disabled=false;
+              return;
+            }catch(e2){
+              console.log('Direct shell failed', e2);
+            }
+          }
+          addMsg('assistant', `❌ LLM failed: ${d.error||JSON.stringify(d).slice(0,300)}\n\n💡 Fix: Add credits at https://openrouter.ai/settings/credits\nOr use Terminal tab directly (works without LLM) - bottom Terminal button → type command → Run\n\nTerminal tab bypasses AI and runs shell_exec directly.`);
+          sendBtn.disabled=false;
+          return;
+        }
+        // Other error
+        addMsg('assistant', `❌ Error: ${d.error||JSON.stringify(d).slice(0,500)}`);
+        sendBtn.disabled=false;
+        return;
       }
-    }catch(e){ console.log(e); }
+    }catch(e){ 
+      console.log('Chat fetch error', e);
+      addMsg('assistant', `⚠️ Chat failed: ${e.message}\n\nTrying direct terminal...`, true);
+      try{
+        let cmd = msg;
+        if(msg.toLowerCase().startsWith('run ')) cmd = msg.slice(4);
+        const r2 = await fetch(kaggleUrl+'/shell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:currentWorkspace,cmd})});
+        const d2 = await r2.json();
+        addMsg('assistant', `⚡ Direct:\n$ ${cmd}\n${d2.stdout||''}${d2.stderr?'\nERR:'+d2.stderr:''}`);
+        refreshFiles();
+      }catch(e2){}
+    }
+  } else {
+    addMsg('assistant','⚠️ Set API URL in settings (gear icon) - backend offline');
   }
-  addMsg('assistant','⚠️ Set API URL in settings or add OpenRouter key');
   sendBtn.disabled=false;
 }
 
