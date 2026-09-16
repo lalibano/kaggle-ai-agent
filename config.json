@@ -5,9 +5,9 @@
   "ntfy_topic": "kaggle-agent-amaankhan231",
   "fixed_website": "https://lalibano.github.io/kaggle-ai-agent/",
   "github_repo": "https://github.com/lalibano/kaggle-ai-agent",
-  "version": "3.0",
-  "last_updated": "2026-09-15T15:30:00Z",
+  "version": "3.2",
+  "last_updated": "2026-09-16T02:50:00Z",
   "status": "running",
-  "ui": "DRASTICALLY new - clean, simple, mobile friendly, bottom tabs, drawer, minimal",
-  "features": ["autonomous_agent", "parallel_background_tasks", "chat_history_persist", "internet_ssl_fix", "natural_answers", "composio_path_fix", "mobile_friendly"]
+  "fix": "Terminal refusal fixed: OpenRouter 402 credit error due to 16384 max_tokens, fixed to 1024 + fallback models + direct shell bypass. Terminal tab always works via /shell endpoint.",
+  "features": ["autonomous_agent", "parallel_tasks", "direct_terminal_fallback", "credit_error_handling", "file_download", "mobile_fixed_bottom"]
 }
